@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KaliCopilot — AI Pentesting Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/green-screen.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<style>
+  :root {
+    --green: #00ff41;
+    --green-dim: #00c832;
+    --green-dark: #003b0f;
+    --green-glow: rgba(0,255,65,0.15);
+    --red: #ff2222;
+    --yellow: #ffcc00;
+    --bg: #000d02;
+    --bg2: #010f04;
+    --bg3: #001a07;
+    --border: rgba(0,255,65,0.2);
+    --text: #b0ffb8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Scanline effect */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* CRT flicker */
+  @keyframes flicker {
+    0%,100% { opacity: 1; }
+    92% { opacity: 1; }
+    93% { opacity: 0.85; }
+    94% { opacity: 1; }
+    96% { opacity: 0.9; }
+    97% { opacity: 1; }
+  }
+  body { animation: flicker 8s infinite; }
+
+  /* Header */
+  header {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: var(--green);
+    text-shadow: 0 0 20px var(--green), 0 0 40px rgba(0,255,65,0.4);
+    letter-spacing: 2px;
+  }
+
+  .logo span { color: var(--red); }
+
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--green-dim);
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .header-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--green);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    padding: 5px 10px;
+    cursor: pointer;
+    outline: none;
+  }
+
+  select:focus { border-color: var(--green); }
+
+  .btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--green-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .btn:hover {
+    border-color: var(--green);
+    color: var(--green);
+    box-shadow: 0 0 10px var(--green-glow);
+  }
+
+  /* Layout */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    border-right: 1px solid var(--border);
+    background: var(--bg2);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    color: var(--green-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .quick-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    padding: 5px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 3px;
+    line-height: 1.4;
+  }
+
+  .quick-btn:hover {
+    border-color: var(--border);
+    color: var(--green);
+    background: var(--green-glow);
+  }
+
+  .quick-btn::before { content: '> '; color: var(--green-dim); }
+
+  /* Chat area */
+  .chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scroll-behavior: smooth;
+  }
+
+  #messages::-webkit-scrollbar { width: 4px; }
+  #messages::-webkit-scrollbar-track { background: var(--bg); }
+  #messages::-webkit-scrollbar-thumb { background: var(--green-dark); }
+
+  .message {
+    display: flex;
+    gap: 12px;
+    animation: msgIn 0.3s ease;
+  }
+
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-icon {
+    width: 32px; height: 32px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .user-msg .msg-icon { border-color: rgba(255,204,0,0.3); color: var(--yellow); }
+  .ai-msg .msg-icon { border-color: var(--border); color: var(--green); box-shadow: 0 0 8px var(--green-glow); }
+
+  .msg-content { flex: 1; }
+
+  .msg-meta {
+    font-size: 0.65rem;
+    color: var(--green-dim);
+    margin-bottom: 5px;
+    letter-spacing: 1px;
+  }
+
+  .msg-body {
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .user-msg .msg-body { color: #e0ffe4; }
+
+  /* Markdown rendering */
+  .msg-body h1,.msg-body h2,.msg-body h3 {
+    font-family: 'Orbitron', monospace;
+    color: var(--green);
+    margin: 10px 0 6px;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+  }
+
+  .msg-body code {
+    background: var(--bg3);
+    color: var(--green);
+    padding: 1px 5px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.82rem;
+    border: 1px solid var(--border);
+  }
+
+  .msg-body pre {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 12px;
+    margin: 8px 0;
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .msg-body pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--green);
+    font-size: 0.82rem;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 6px; right: 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--green-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover { color: var(--green); border-color: var(--green); }
+
+  .msg-body ul, .msg-body ol {
+    padding-left: 20px;
+    margin: 6px 0;
+  }
+
+  .msg-body li { margin-bottom: 3px; }
+
+  .msg-body strong { color: var(--green); }
+
+  .msg-body a { color: var(--green-dim); text-decoration: underline; }
+
+  /* Tool output block */
+  .tool-output {
+    background: #000;
+    border: 1px solid rgba(0,255,65,0.1);
+    padding: 10px;
+    font-size: 0.75rem;
+    color: #888;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 200px;
+    overflow-y: auto;
+    margin: 6px 0;
+  }
+
+  .tool-label {
+    font-size: 0.65rem;
+    color: var(--yellow);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  /* Typing indicator */
+  .typing {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 0;
+  }
+
+  .typing span {
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: blink 1.2s infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes blink {
+    0%,100% { opacity: 0.2; }
+    50% { opacity: 1; }
+  }
+
+  /* Input area */
+  .input-area {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+
+  .run-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .run-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid rgba(0,255,65,0.15);
+    color: var(--yellow);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    padding: 6px 10px;
+    outline: none;
+    transition: border 0.2s;
+  }
+
+  .run-input::placeholder { color: rgba(255,204,0,0.3); }
+  .run-input:focus { border-color: rgba(255,204,0,0.4); }
+
+  .run-label {
+    font-size: 0.7rem;
+    color: var(--yellow);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    letter-spacing: 1px;
+  }
+
+  .chat-bar {
+    display: flex;
+    gap: 8px;
+  }
+
+  #userInput {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+    padding: 10px 14px;
+    outline: none;
+    resize: none;
+    height: 44px;
+    transition: border 0.2s;
+  }
+
+  #userInput:focus { border-color: var(--green); box-shadow: 0 0 12px var(--green-glow); }
+  #userInput::placeholder { color: rgba(0,255,65,0.25); }
+
+  .send-btn {
+    background: var(--green-dark);
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    padding: 0 20px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all 0.2s;
+  }
+
+  .send-btn:hover {
+    background: var(--green);
+    color: var(--bg);
+    box-shadow: 0 0 20px rgba(0,255,65,0.4);
+  }
+
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Welcome */
+  .welcome {
+    text-align: center;
+    padding: 40px 20px;
+    color: rgba(0,255,65,0.3);
+  }
+
+  .welcome-ascii {
+    font-size: 0.65rem;
+    line-height: 1.3;
+    color: rgba(0,255,65,0.2);
+    margin-bottom: 20px;
+    white-space: pre;
+  }
+
+  .welcome h2 {
+    font-family: 'Orbitron', monospace;
+    font-size: 1rem;
+    color: rgba(0,255,65,0.5);
+    letter-spacing: 3px;
+    margin-bottom: 10px;
+  }
+
+  .welcome p { font-size: 0.8rem; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">KALI<span>COPILOT</span></div>
+  <div class="status">
+    <div class="dot"></div>
+    <span>SYSTEM ONLINE</span>
+  </div>
+  <div class="header-actions">
+    <select id="modelSelect">
+      <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (Free)</option>
+      <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (Free)</option>
+      <option value="google/gemma-3-27b-it:free">Gemma 3 27B (Free)</option>
+      <option value="deepseek/deepseek-r1:free">DeepSeek R1 (Free)</option>
+      <option value="qwen/qwen-2.5-72b-instruct:free">Qwen 2.5 72B (Free)</option>
+    </select>
+    <button class="btn" onclick="clearSession()">[ CLEAR ]</button>
+    <button class="btn" onclick="exportSession()">[ EXPORT ]</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">⚡ Quick Prompts</div>
+      <button class="quick-btn" onclick="quickPrompt('Full recon on target IP 10.10.10.1 — where do I start?')">Full recon methodology</button>
+      <button class="quick-btn" onclick="quickPrompt('Generate nmap command for stealth full port scan with service detection')">Nmap stealth scan</button>
+      <button class="quick-btn" onclick="quickPrompt('How to enumerate SMB shares and find vulnerabilities?')">SMB enumeration</button>
+      <button class="quick-btn" onclick="quickPrompt('Web app found on port 80. What tests should I run first?')">Web app testing</button>
+      <button class="quick-btn" onclick="quickPrompt('Explain how to use Metasploit to exploit MS17-010 EternalBlue')">EternalBlue exploit</button>
+      <button class="quick-btn" onclick="quickPrompt('How to crack a hash found in /etc/shadow?')">Hash cracking</button>
+      <button class="quick-btn" onclick="quickPrompt('Post-exploitation: how to maintain persistence on Linux?')">Linux persistence</button>
+      <button class="quick-btn" onclick="quickPrompt('How to perform SQL injection manually on a login form?')">SQLi manual</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">🔧 Tool References</div>
+      <button class="quick-btn" onclick="quickPrompt('Give me a cheatsheet of essential nmap commands')">nmap cheatsheet</button>
+      <button class="quick-btn" onclick="quickPrompt('Give me a gobuster wordlist and command examples')">gobuster guide</button>
+      <button class="quick-btn" onclick="quickPrompt('Hydra command examples for different protocols')">hydra examples</button>
+      <button class="quick-btn" onclick="quickPrompt('Common SQLMap flags and usage examples')">sqlmap guide</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">📋 Workflows</div>
+      <button class="quick-btn" onclick="quickPrompt('Give me a complete CTF methodology checklist from start to finish')">CTF checklist</button>
+      <button class="quick-btn" onclick="quickPrompt('Explain the full bug bounty recon workflow')">Bug bounty recon</button>
+      <button class="quick-btn" onclick="quickPrompt('Internal network pentest methodology')">Internal pentest</button>
+    </div>
+  </div>
+
+  <div class="chat-area">
+    <div id="messages">
+      <div class="welcome">
+        <div class="welcome-ascii">
+ ██╗  ██╗ █████╗ ██╗     ██╗
+ ██║ ██╔╝██╔══██╗██║     ██║
+ █████╔╝ ███████║██║     ██║
+ ██╔═██╗ ██╔══██║██║     ██║
+ ██║  ██╗██║  ██║███████╗██║
+ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝</div>
+        <h2>AI PENTESTING COPILOT</h2>
+        <p>Powered by OpenRouter free models<br>
+        Ask anything about pentesting, paste tool output for analysis,<br>
+        or run tools directly from the terminal bar below.</p>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="run-bar">
+        <span class="run-label">$ EXEC:</span>
+        <input type="text" class="run-input" id="cmdInput" placeholder="nmap -sV -p 80,443 192.168.1.1" />
+        <button class="btn" onclick="runCommand()">[ RUN + ANALYZE ]</button>
+      </div>
+      <div class="chat-bar">
+        <textarea id="userInput" placeholder="Ask KaliCopilot anything... or paste tool output for analysis" onkeydown="handleKey(event)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()">SEND</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const sessionId = 'session_' + Date.now();
+  let isLoading = false;
+
+  function getModel() {
+    return document.getElementById('modelSelect').value;
+  }
+
+  function timestamp() {
+    return new Date().toLocaleTimeString('en-US', {hour12: false});
+  }
+
+  function addMessage(role, content, extra = null) {
+    const msgs = document.getElementById('messages');
+
+    // Remove welcome if present
+    const welcome = msgs.querySelector('.welcome');
+    if (welcome) welcome.remove();
+
+    const div = document.createElement('div');
+    div.className = `message ${role === 'user' ? 'user-msg' : 'ai-msg'}`;
+
+    const icon = role === 'user' ? '▶' : '⬡';
+    const label = role === 'user' ? 'OPERATOR' : 'KALI-COPILOT';
+    const model = role === 'ai' ? `<span style="color:rgba(0,255,65,0.3)"> | ${getModel().split('/')[1]?.split(':')[0] || 'AI'}</span>` : '';
+
+    let bodyHTML = '';
+
+    if (extra) {
+      bodyHTML += `<div class="tool-label">▶ EXECUTED: ${extra.command}</div>`;
+      bodyHTML += `<div class="tool-output">${escapeHtml(extra.output)}</div>`;
+      bodyHTML += `<div class="tool-label" style="color:var(--green);margin-top:8px">⬡ AI ANALYSIS:</div>`;
+    }
+
+    if (role === 'user') {
+      bodyHTML += escapeHtml(content).replace(/\n/g, '<br>');
+    } else {
+      bodyHTML += renderMarkdown(content);
+    }
+
+    div.innerHTML = `
+      <div class="msg-icon">${icon}</div>
+      <div class="msg-content">
+        <div class="msg-meta">[${timestamp()}] ${label}${model}</div>
+        <div class="msg-body">${bodyHTML}</div>
+      </div>
+    `;
+
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    // Syntax highlight
+    div.querySelectorAll('pre code').forEach(el => {
+      hljs.highlightElement(el);
+      // Add copy button
+      const pre = el.parentElement;
+      pre.style.position = 'relative';
+      const btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.textContent = 'COPY';
+      btn.onclick = () => {
+        navigator.clipboard.writeText(el.textContent);
+        btn.textContent = 'COPIED!';
+        setTimeout(() => btn.textContent = 'COPY', 1500);
+      };
+      pre.appendChild(btn);
+    });
+
+    return div;
+  }
+
+  function addTyping() {
+    const msgs = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'message ai-msg';
+    div.id = 'typing-indicator';
+    div.innerHTML = `
+      <div class="msg-icon">⬡</div>
+      <div class="msg-content">
+        <div class="msg-meta">[${timestamp()}] KALI-COPILOT</div>
+        <div class="msg-body"><div class="typing"><span></span><span></span><span></span></div></div>
+      </div>
+    `;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function removeTyping() {
+    document.getElementById('typing-indicator')?.remove();
+  }
+
+  function renderMarkdown(text) {
+    try {
+      return marked.parse(text);
+    } catch {
+      return escapeHtml(text).replace(/\n/g, '<br>');
+    }
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  async function sendMessage(content = null) {
+    if (isLoading) return;
+    const input = document.getElementById('userInput');
+    const message = content || input.value.trim();
+    if (!message) return;
+
+    input.value = '';
+    addMessage('user', message);
+    isLoading = true;
+    document.getElementById('sendBtn').disabled = true;
+    addTyping();
+
+    try {
+      const resp = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message, session_id: sessionId, model: getModel() })
+      });
+      const data = await resp.json();
+      removeTyping();
+      if (data.error) {
+        addMessage('ai', `⚠️ **Error:** ${data.error}`);
+      } else {
+        addMessage('ai', data.reply);
+      }
+    } catch (e) {
+      removeTyping();
+      addMessage('ai', `⚠️ **Connection error:** ${e.message}\n\nMake sure the server is running: \`python3 server.py\``);
+    }
+
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+  }
+
+  async function runCommand() {
+    if (isLoading) return;
+    const input = document.getElementById('cmdInput');
+    const command = input.value.trim();
+    if (!command) return;
+    input.value = '';
+
+    isLoading = true;
+    document.getElementById('sendBtn').disabled = true;
+
+    const msgs = document.getElementById('messages');
+    const welcome = msgs.querySelector('.welcome');
+    if (welcome) welcome.remove();
+
+    // Show running indicator
+    const runDiv = document.createElement('div');
+    runDiv.className = 'message user-msg';
+    runDiv.innerHTML = `
+      <div class="msg-icon">$</div>
+      <div class="msg-content">
+        <div class="msg-meta">[${timestamp()}] EXECUTING COMMAND</div>
+        <div class="msg-body"><span style="color:var(--yellow)">${escapeHtml(command)}</span> <span style="color:rgba(0,255,65,0.4)">... running</span></div>
+      </div>
+    `;
+    msgs.appendChild(runDiv);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    try {
+      const runResp = await fetch('/api/run', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ command })
+      });
+      const runData = await runResp.json();
+
+      if (runData.error) {
+        runDiv.querySelector('.msg-body').innerHTML = `<span style="color:var(--red)">⚠ ${escapeHtml(runData.error)}</span>`;
+        isLoading = false;
+        document.getElementById('sendBtn').disabled = false;
+        return;
+      }
+
+      runDiv.querySelector('.msg-body').innerHTML = `
+        <span style="color:var(--yellow)">$ ${escapeHtml(command)}</span>
+        <div class="tool-output" style="margin-top:8px">${escapeHtml(runData.output)}</div>
+      `;
+
+      // Now analyze with AI
+      addTyping();
+      const analyzeMsg = `I ran: \`${command}\`\n\nOutput:\n\`\`\`\n${runData.output}\n\`\`\`\n\nAnalyze this output and tell me what you found and what to do next.`;
+
+      const chatResp = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: analyzeMsg, session_id: sessionId, model: getModel() })
+      });
+      const chatData = await chatResp.json();
+      removeTyping();
+      addMessage('ai', chatData.reply || chatData.error);
+
+    } catch (e) {
+      removeTyping();
+      addMessage('ai', `⚠️ **Error:** ${e.message}`);
+    }
+
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+  }
+
+  function quickPrompt(text) {
+    document.getElementById('userInput').value = text;
+    sendMessage();
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  async function clearSession() {
+    await fetch('/api/clear', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ session_id: sessionId })
+    });
+    document.getElementById('messages').innerHTML = `
+      <div class="welcome">
+        <h2>SESSION CLEARED</h2>
+        <p>Conversation history has been wiped.<br>Start a new session.</p>
+      </div>
+    `;
+  }
+
+  async function exportSession() {
+    const resp = await fetch('/api/export', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ session_id: sessionId })
+    });
+    const data = await resp.json();
+    if (data.file) {
+      addMessage('ai', `✅ Session exported to: \`${data.file}\``);
+    }
+  }
+</script>
+</body>
+</html>
