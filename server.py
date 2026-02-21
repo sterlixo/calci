@@ -78,8 +78,8 @@ def chat():
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://calci.local",
-        "X-Title": "Calci"
+        "HTTP-Referer": "https://calcium.local",
+        "X-Title": "Calcium"
     }
 
     try:

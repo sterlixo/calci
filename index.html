@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Calci — AI Pentesting Assistant</title>
+<title>Calcium — AI Pentesting Assistant</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/green-screen.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -476,7 +476,7 @@
 <body>
 
 <header>
-  <div class="logo">KALI<span>COPILOT</span></div>
+  <div class="logo">CAL<span>CIUM</span></div>
   <div class="status">
     <div class="dot"></div>
     <span>SYSTEM ONLINE</span>
@@ -548,7 +548,7 @@
         <button class="btn" onclick="runCommand()">[ RUN + ANALYZE ]</button>
       </div>
       <div class="chat-bar">
-        <textarea id="userInput" placeholder="Ask Calci anything... or paste tool output for analysis" onkeydown="handleKey(event)"></textarea>
+        <textarea id="userInput" placeholder="Ask Calcium anything... or paste tool output for analysis" onkeydown="handleKey(event)"></textarea>
         <button class="send-btn" id="sendBtn" onclick="sendMessage()">SEND</button>
       </div>
     </div>
@@ -578,7 +578,7 @@
     div.className = `message ${role === 'user' ? 'user-msg' : 'ai-msg'}`;
 
     const icon = role === 'user' ? '▶' : '⬡';
-    const label = role === 'user' ? 'OPERATOR' : 'CALCI';
+    const label = role === 'user' ? 'OPERATOR' : 'CALCIUM';
     const model = role === 'ai' ? `<span style="color:rgba(0,255,65,0.3)"> | ${getModel().split('/')[1]?.split(':')[0] || 'AI'}</span>` : '';
 
     let bodyHTML = '';
@@ -634,7 +634,7 @@
     div.innerHTML = `
       <div class="msg-icon">⬡</div>
       <div class="msg-content">
-        <div class="msg-meta">[${timestamp()}] CALCI</div>
+        <div class="msg-meta">[${timestamp()}] CALCIUM</div>
         <div class="msg-body"><div class="typing"><span></span><span></span><span></span></div></div>
       </div>
     `;
