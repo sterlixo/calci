@@ -26,7 +26,7 @@ load_env()
 
 # ── Config ────────────────────────────────────────────────────────────────────
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-MODEL = os.environ.get("MODEL", "meta-llama/llama-3.3-70b-instruct:free")
+MODEL = os.environ.get("MODEL", "openrouter/free")
 API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 SYSTEM_PROMPT = """You are Calci, an expert AI assistant for ethical penetration testers and security researchers working on Kali Linux.

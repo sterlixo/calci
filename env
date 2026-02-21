@@ -1,0 +1,13 @@
+# Calci Configuration File
+# Add your API keys here — this file is loaded automatically
+
+OPENROUTER_API_KEY=sk-or-your-key-here
+
+# Optional: Change default model
+# Options:
+#   openrouter/free  (default, best)
+#   openrouter/free
+#   openrouter/free
+#   openrouter/free
+#   openrouter/free
+MODEL=openrouter/free

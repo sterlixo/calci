@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KaliCopilot — AI Pentesting Assistant</title>
+<title>Calci — AI Pentesting Assistant</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/green-screen.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -483,11 +483,13 @@
   </div>
   <div class="header-actions">
     <select id="modelSelect">
+      <option value="openrouter/free">Auto (Best Available Free) ★ Default</option>
       <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (Free)</option>
-      <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (Free)</option>
-      <option value="google/gemma-3-27b-it:free">Gemma 3 27B (Free)</option>
+      <option value="google/gemini-2.0-flash-exp:free">Gemini 2.0 Flash (Free)</option>
       <option value="deepseek/deepseek-r1:free">DeepSeek R1 (Free)</option>
+      <option value="mistralai/mistral-small-3.1-24b-instruct:free">Mistral Small 3.1 (Free)</option>
       <option value="qwen/qwen-2.5-72b-instruct:free">Qwen 2.5 72B (Free)</option>
+      <option value="nvidia/llama-3.1-nemotron-nano-8b-v1:free">Nvidia Nemotron 8B (Free)</option>
     </select>
     <button class="btn" onclick="clearSession()">[ CLEAR ]</button>
     <button class="btn" onclick="exportSession()">[ EXPORT ]</button>
@@ -546,7 +548,7 @@
         <button class="btn" onclick="runCommand()">[ RUN + ANALYZE ]</button>
       </div>
       <div class="chat-bar">
-        <textarea id="userInput" placeholder="Ask KaliCopilot anything... or paste tool output for analysis" onkeydown="handleKey(event)"></textarea>
+        <textarea id="userInput" placeholder="Ask Calci anything... or paste tool output for analysis" onkeydown="handleKey(event)"></textarea>
         <button class="send-btn" id="sendBtn" onclick="sendMessage()">SEND</button>
       </div>
     </div>
@@ -576,7 +578,7 @@
     div.className = `message ${role === 'user' ? 'user-msg' : 'ai-msg'}`;
 
     const icon = role === 'user' ? '▶' : '⬡';
-    const label = role === 'user' ? 'OPERATOR' : 'KALI-COPILOT';
+    const label = role === 'user' ? 'OPERATOR' : 'CALCI';
     const model = role === 'ai' ? `<span style="color:rgba(0,255,65,0.3)"> | ${getModel().split('/')[1]?.split(':')[0] || 'AI'}</span>` : '';
 
     let bodyHTML = '';
@@ -632,7 +634,7 @@
     div.innerHTML = `
       <div class="msg-icon">⬡</div>
       <div class="msg-content">
-        <div class="msg-meta">[${timestamp()}] KALI-COPILOT</div>
+        <div class="msg-meta">[${timestamp()}] CALCI</div>
         <div class="msg-body"><div class="typing"><span></span><span></span><span></span></div></div>
       </div>
     `;
