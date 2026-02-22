@@ -2,6 +2,9 @@ const { app, BrowserWindow } = require('electron')
 const { spawn } = require('child_process')
 const path = require('path')
 
+// Force consistent zoom regardless of how app is launched (terminal vs desktop icon)
+app.commandLine.appendSwitch('force-device-scale-factor', '1')
+
 let win, server
 
 function startFlask() {
@@ -41,6 +44,7 @@ function createWindow() {
   // Try to load, retry until Flask is ready
   function tryLoad(retries = 10) {
     win.loadURL('http://localhost:5000').then(() => {
+      win.webContents.setZoomFactor(1.5)  // Force consistent zoom level always
       win.show()
     }).catch(() => {
       if (retries > 0) {
