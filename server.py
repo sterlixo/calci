@@ -64,10 +64,13 @@ ALLOWED_TOOLS = set([
     # Web application testing
     "nikto", "whatweb", "wafw00f", "wpscan", "droopescan", "joomscan",
     "gobuster", "dirb", "dirsearch", "feroxbuster", "ffuf", "wfuzz",
+    "gospider", "hakrawler", "katana", "gau", "waybackurls", "photon",
     "sqlmap", "nosqli", "xsser",
     "curl", "wget", "httpx", "httprobe",
     "burpsuite", "zaproxy",
     "arjun", "dalfox", "nuclei",
+    "sslscan", "sslyze", "testssl", "testssl.sh",
+    "naabu", "dnsx", "tlsx", "mapcidr",
 
     # SMB / AD / Network services
     "enum4linux", "enum4linux-ng", "smbclient", "smbmap", "rpcclient",
