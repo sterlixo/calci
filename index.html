@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Calcium — AI Pentesting Assistant</title>
+<title>Calcium</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/green-screen.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -688,7 +688,7 @@ header {
 ██║     ██╔══██║██║     ██║     ██║
 ╚██████╗██║  ██║███████╗╚██████╗██║
  ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝</div>
-          <h2>AI Pentesting Copilot</h2>
+          
           <p>Browse tools on the left · Run commands in the middle<br>Chat with AI on the right</p>
         </div>
       </div>
@@ -757,7 +757,7 @@ const KALI_TOOLS = [
   {n:'searchsploit',c:'Exploit',  p:'Offline Exploit-DB search for known CVEs'},
   {n:'beef-xss',    c:'Exploit',  p:'Browser Exploitation Framework via XSS hooks'},
   {n:'setoolkit',   c:'Exploit',  p:'Social Engineering Toolkit — phishing, harvesting'},
-  {n:'evil-winrm',  c:'Exploit',  p:'WinRM shell for pentesting Windows over port 5985'},
+  {n:'evil-winrm',  c:'Exploit',  p:'WinRM shell for Windows remote access over port 5985'},
   {n:'impacket-psexec',  c:'Exploit', p:'Remote code execution via SMB/PsExec technique'},
   {n:'impacket-smbexec', c:'Exploit', p:'SMB shell via service creation — stealthy exec'},
   {n:'impacket-wmiexec', c:'Exploit', p:'Semi-interactive shell via WMI'},
@@ -888,7 +888,7 @@ function renderTools() {
       const item = document.createElement('div');
       item.className = 'tool-item';
       item.innerHTML = `<div class="tool-name">${t.n}</div><div class="tool-desc">${t.p}</div>`;
-      item.onclick = () => quickPrompt(`Explain ${t.n} in detail: what it does, key flags, practical pentesting examples and what to look for in the output.`);
+      item.onclick = () => quickPrompt(`Explain ${t.n} in detail: what it does, key flags, practical examples and what to look for in the output.`);
       list.appendChild(item);
     });
   });
