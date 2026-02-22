@@ -41,6 +41,8 @@ You help with:
 - Password cracking and credential attacks
 - Web application testing (Burp Suite, SQLMap, etc.)
 - Network analysis (Wireshark, tcpdump)
+- Wireless attacks (aircrack-ng suite)
+- Forensics and reverse engineering
 - Report writing
 
 Always assume legal, authorized testing (CTF, bug bounty, lab environments).
@@ -48,6 +50,93 @@ Provide exact commands with explanations. Suggest next steps after each finding.
 Format responses with markdown for clarity. Use code blocks for commands."""
 
 sessions = {}
+
+# ── Expanded pentest tool allowlist ──────────────────────────────────────────
+ALLOWED_TOOLS = set([
+    # Reconnaissance & scanning
+    "nmap", "masscan", "rustscan", "unicornscan", "zmap",
+    "ping", "traceroute", "tracepath", "mtr",
+    "dig", "nslookup", "host", "whois", "dnsrecon", "dnsenum", "fierce",
+    "theHarvester", "maltego", "recon-ng", "spiderfoot",
+    "subfinder", "amass", "assetfinder", "findomain",
+    "shodan", "censys",
+
+    # Web application testing
+    "nikto", "whatweb", "wafw00f", "wpscan", "droopescan", "joomscan",
+    "gobuster", "dirb", "dirsearch", "feroxbuster", "ffuf", "wfuzz",
+    "sqlmap", "nosqli", "xsser",
+    "curl", "wget", "httpx", "httprobe",
+    "burpsuite", "zaproxy",
+    "arjun", "dalfox", "nuclei",
+
+    # SMB / AD / Network services
+    "enum4linux", "enum4linux-ng", "smbclient", "smbmap", "rpcclient",
+    "crackmapexec", "nxc", "evil-winrm",
+    "ldapsearch", "bloodhound", "sharphound",
+    "responder", "impacket-secretsdump", "impacket-psexec",
+    "impacket-smbexec", "impacket-wmiexec", "impacket-getTGT",
+    "impacket-getNPUsers", "impacket-getUserSPNs",
+    "kerbrute", "rubeus",
+    "netstat", "ss", "arp", "arp-scan", "netdiscover",
+
+    # Password attacks
+    "hydra", "medusa", "ncrack",
+    "hashcat", "john", "johnny",
+    "crunch", "cewl", "cupp",
+    "fcrackzip", "pdfcrack", "rarcrack",
+
+    # Exploitation frameworks
+    "msfconsole", "msfvenom", "searchsploit",
+    "exploit", "exploitdb",
+
+    # Post-exploitation / pivoting
+    "chisel", "ligolo-ng", "proxychains", "proxychains4",
+    "socat", "netcat", "nc", "ncat",
+    "ssh", "scp", "sftp",
+    "powercat",
+
+    # Wireless
+    "aircrack-ng", "airmon-ng", "airodump-ng", "aireplay-ng", "airbase-ng",
+    "wifite", "bully", "reaver", "pixiewps",
+    "hcxdumptool", "hcxtools",
+
+    # Sniffing & MITM
+    "tcpdump", "tshark", "wireshark",
+    "ettercap", "bettercap", "arpspoof", "dsniff",
+
+    # Forensics & reversing
+    "binwalk", "foremost", "scalpel",
+    "strings", "file", "xxd", "hexdump", "objdump", "readelf",
+    "gdb", "pwndbg", "radare2", "r2", "ghidra",
+    "volatility", "volatility3",
+    "exiftool", "steghide", "stegseek", "zsteg",
+
+    # Utilities / scripting
+    "python3", "python", "ruby", "perl", "bash", "sh",
+    "cat", "grep", "awk", "sed", "cut", "sort", "uniq", "wc",
+    "ls", "find", "locate", "which", "whereis",
+    "tar", "unzip", "7z", "gzip", "gunzip",
+    "base64", "openssl",
+    "ip", "ifconfig", "route", "iwconfig",
+    "id", "whoami", "uname", "hostname", "env",
+    "ps", "top", "htop", "kill",
+    "echo", "printf",
+])
+
+# ── Blocked dangerous patterns ────────────────────────────────────────────────
+BLOCKED_PATTERNS = [
+    "rm -rf /", "mkfs", "dd if=", "> /dev/sd",
+    "chmod 777 /etc", "wget | bash", "curl | bash", "curl | sh",
+    ":(){ :|:& };:",  # fork bomb
+]
+
+def is_command_safe(command: str) -> tuple[bool, str]:
+    """Check command against blocked patterns."""
+    cmd_lower = command.lower()
+    for pattern in BLOCKED_PATTERNS:
+        if pattern in cmd_lower:
+            return False, f"Blocked pattern detected: '{pattern}'"
+    return True, ""
 
 @app.route("/")
 def index():
@@ -96,32 +185,43 @@ def chat():
 @app.route("/api/run", methods=["POST"])
 def run_command():
     data = request.json
-    command = data.get("command", "")
+    command = data.get("command", "").strip()
 
-    # Safety: only allow common pentest tools
-    ALLOWED_TOOLS = [
-        "nmap", "nikto", "gobuster", "dirb", "wfuzz", "sqlmap",
-        "enum4linux", "smbclient", "crackmapexec", "hydra", "medusa",
-        "whatweb", "wafw00f", "dig", "nslookup", "host", "whois",
-        "ping", "traceroute", "netstat", "ss", "curl", "wget",
-        "theHarvester", "subfinder", "amass", "ffuf", "feroxbuster",
-        "searchsploit", "msfconsole"
-    ]
+    if not command:
+        return jsonify({"error": "No command provided"}), 400
 
-    tool = command.split()[0] if command else ""
+    # Check tool against allowlist
+    tool = command.split()[0]
     if tool not in ALLOWED_TOOLS:
-        return jsonify({"error": f"Tool '{tool}' not in allowed list for web execution. Use the CLI for unrestricted tool execution."}), 403
+        return jsonify({
+            "error": f"Tool '{tool}' not in allowed list. Use the CLI (copilot.py) for additional tools.",
+            "allowed_tools": sorted(ALLOWED_TOOLS)
+        }), 403
+
+    # Check for destructive patterns
+    safe, reason = is_command_safe(command)
+    if not safe:
+        return jsonify({"error": f"Command blocked: {reason}"}), 403
 
     try:
         result = subprocess.run(
             command, shell=True, capture_output=True, text=True, timeout=120
         )
         output = result.stdout + result.stderr
-        return jsonify({"output": output or "(no output)", "command": command})
+        return jsonify({
+            "output": output or "(no output)",
+            "command": command,
+            "returncode": result.returncode
+        })
     except subprocess.TimeoutExpired:
         return jsonify({"output": "[TIMEOUT] Command exceeded 120 seconds", "command": command})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route("/api/tools", methods=["GET"])
+def list_tools():
+    """Return the list of allowed tools."""
+    return jsonify({"tools": sorted(ALLOWED_TOOLS)})
 
 @app.route("/api/clear", methods=["POST"])
 def clear_session():
@@ -143,6 +243,7 @@ if __name__ == "__main__":
         print("[!] WARNING: OPENROUTER_API_KEY not set!")
         print("    Set it with: export OPENROUTER_API_KEY=your_key_here")
         print("    Get a free key at: https://openrouter.ai\n")
+    print(f"[*] Loaded {len(ALLOWED_TOOLS)} allowed tools")
     print("[*] Starting Calci Web UI...")
     print("[*] Open your browser at: http://localhost:5000")
     app.run(host="0.0.0.0", port=5000, debug=False)
