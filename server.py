@@ -9,7 +9,8 @@ import os
 import json
 import subprocess
 import requests
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, redirect
+from auth import verify_login, verify_token, logout_token, init_auth, create_user, delete_user, list_users, change_password
 from datetime import datetime
 from pathlib import Path
 
@@ -26,6 +27,14 @@ def load_env():
 load_env()
 
 app = Flask(__name__, static_folder=".")
+
+def require_auth():
+    """Check auth token from header or cookie."""
+    token = request.headers.get("X-Auth-Token") or request.cookies.get("calcium_token")
+    result = verify_token(token)
+    if not result["valid"]:
+        return None
+    return result
 
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 MODEL = os.environ.get("MODEL", "openrouter/free")
@@ -147,6 +156,8 @@ def index():
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
+    if not require_auth():
+        return jsonify({"error": "Unauthorized"}), 401
     data = request.json
     session_id = data.get("session_id", "default")
     user_message = data.get("message", "")
@@ -187,6 +198,8 @@ def chat():
 
 @app.route("/api/run", methods=["POST"])
 def run_command():
+    if not require_auth():
+        return jsonify({"error": "Unauthorized"}), 401
     data = request.json
     command = data.get("command", "").strip()
 
@@ -241,7 +254,68 @@ def export_session():
         json.dump(history, f, indent=2)
     return jsonify({"status": "saved", "file": filename})
 
+
+# ── Auth routes ───────────────────────────────────────────────────────────────
+@app.route("/login")
+def login_page():
+    return send_from_directory(".", "login.html")
+
+@app.route("/api/auth/login", methods=["POST"])
+def api_login():
+    data = request.json
+    result = verify_login(data.get("username",""), data.get("password",""))
+    return jsonify(result), 200 if result["success"] else 401
+
+@app.route("/api/auth/logout", methods=["POST"])
+def api_logout():
+    token = request.headers.get("X-Auth-Token") or request.cookies.get("calcium_token")
+    if token:
+        logout_token(token)
+    return jsonify({"success": True})
+
+@app.route("/api/auth/verify", methods=["GET"])
+def api_verify():
+    token = request.headers.get("X-Auth-Token") or request.cookies.get("calcium_token")
+    return jsonify(verify_token(token))
+
+@app.route("/api/auth/users", methods=["GET"])
+def api_list_users():
+    auth = require_auth()
+    if not auth or auth["role"] != "admin":
+        return jsonify({"error": "Admin only"}), 403
+    return jsonify({"users": list_users()})
+
+@app.route("/api/auth/users/create", methods=["POST"])
+def api_create_user():
+    auth = require_auth()
+    if not auth or auth["role"] != "admin":
+        return jsonify({"error": "Admin only"}), 403
+    data = request.json
+    result = create_user(data.get("username",""), data.get("password",""), data.get("role","user"))
+    return jsonify(result), 200 if result["success"] else 400
+
+@app.route("/api/auth/users/delete", methods=["POST"])
+def api_delete_user():
+    auth = require_auth()
+    if not auth or auth["role"] != "admin":
+        return jsonify({"error": "Admin only"}), 403
+    data = request.json
+    if data.get("username") == auth["username"]:
+        return jsonify({"success": False, "message": "Cannot delete yourself"}), 400
+    result = delete_user(data.get("username",""))
+    return jsonify(result)
+
+@app.route("/api/auth/password", methods=["POST"])
+def api_change_password():
+    auth = require_auth()
+    if not auth:
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    result = change_password(auth["username"], data.get("old_password",""), data.get("new_password",""))
+    return jsonify(result)
+
 if __name__ == "__main__":
+    init_auth()
     if not OPENROUTER_API_KEY:
         print("[!] WARNING: OPENROUTER_API_KEY not set!")
         print("    Set it with: export OPENROUTER_API_KEY=your_key_here")

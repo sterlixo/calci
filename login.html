@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calcium — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+html { font-size: 15px; }
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg:      #080c10;
+  --bg2:     #0c1118;
+  --bg3:     #101820;
+  --border:  rgba(0,200,255,0.12);
+  --border2: rgba(0,200,255,0.25);
+  --cyan:    #00ccff;
+  --cyan-dim:#0088bb;
+  --glow:    rgba(0,200,255,0.12);
+  --red:     #ff3355;
+  --green:   #00ff88;
+  --text:    #b8d8e8;
+  --dim:     rgba(180,220,240,0.35);
+  --mono:    'JetBrains Mono', monospace;
+  --display: 'Rajdhani', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Animated grid background */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: gridPan 20s linear infinite;
+}
+@keyframes gridPan {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(40px); }
+}
+
+/* Scanlines */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.05) 3px, rgba(0,0,0,0.05) 4px);
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Corner decorations */
+.corner {
+  position: fixed;
+  width: 60px; height: 60px;
+  opacity: 0.2;
+}
+.corner-tl { top:20px; left:20px; border-top:2px solid var(--cyan); border-left:2px solid var(--cyan); }
+.corner-tr { top:20px; right:20px; border-top:2px solid var(--cyan); border-right:2px solid var(--cyan); }
+.corner-bl { bottom:20px; left:20px; border-bottom:2px solid var(--cyan); border-left:2px solid var(--cyan); }
+.corner-br { bottom:20px; right:20px; border-bottom:2px solid var(--cyan); border-right:2px solid var(--cyan); }
+
+/* Main card */
+.card {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  box-shadow: 0 0 60px rgba(0,200,255,0.06), 0 0 120px rgba(0,0,0,0.5);
+  animation: cardIn 0.4s ease;
+}
+@keyframes cardIn {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* Card header */
+.card-head {
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  position: relative;
+}
+
+.logo {
+  font-family: var(--display);
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 4px;
+  text-shadow: 0 0 30px rgba(0,200,255,0.5), 0 0 60px rgba(0,200,255,0.2);
+  display: block;
+  margin-bottom: 6px;
+}
+.logo em { color: rgba(0,200,255,0.4); font-style:normal; }
+
+.tagline {
+  font-size: 0.68rem;
+  color: var(--dim);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+.status-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.status-text { font-size:0.65rem; color:rgba(0,255,136,0.5); letter-spacing:2px; text-transform:uppercase; }
+
+/* Card body */
+.card-body { padding: 28px 32px; }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.tab {
+  flex: 1;
+  padding: 8px;
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  background: transparent;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  font-family: var(--mono);
+}
+.tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.tab:hover:not(.active) { color: var(--text); }
+
+/* Form panels */
+.panel { display:none; }
+.panel.active { display:block; }
+
+/* Form fields */
+.field { margin-bottom: 18px; }
+.field-label {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.field-input {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  padding: 10px 12px;
+  outline: none;
+  transition: border 0.15s, box-shadow 0.15s;
+}
+.field-input:focus {
+  border-color: rgba(0,200,255,0.4);
+  box-shadow: 0 0 0 3px rgba(0,200,255,0.06);
+}
+.field-input::placeholder { color: rgba(180,220,240,0.2); }
+
+/* Role select */
+.role-select {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  padding: 10px 12px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  transition: border 0.15s;
+}
+.role-select:focus { border-color: rgba(0,200,255,0.4); }
+.role-select option { background: var(--bg3); }
+
+/* Submit button */
+.submit-btn {
+  width: 100%;
+  background: rgba(0,200,255,0.08);
+  border: 1px solid var(--cyan-dim);
+  color: var(--cyan);
+  font-family: var(--display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 12px;
+  cursor: pointer;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  margin-top: 4px;
+}
+.submit-btn:hover {
+  background: var(--cyan);
+  color: var(--bg);
+  box-shadow: 0 0 20px rgba(0,200,255,0.3);
+}
+.submit-btn:disabled { opacity:0.4; cursor:not-allowed; }
+.submit-btn:active { transform: scale(0.99); }
+
+/* Error / success message */
+.msg {
+  padding: 10px 12px;
+  font-size: 0.75rem;
+  border-radius: 2px;
+  margin-bottom: 16px;
+  display: none;
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+}
+.msg.error { background:rgba(255,50,80,0.1); border:1px solid rgba(255,50,80,0.3); color:#ff4466; display:block; }
+.msg.success { background:rgba(0,255,136,0.08); border:1px solid rgba(0,255,136,0.25); color:#00ff88; display:block; }
+
+/* Users list (admin panel) */
+.users-list { margin-top: 8px; }
+.user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+  gap: 8px;
+}
+.user-row:last-child { border-bottom: none; }
+.user-name { color: var(--cyan); font-weight:600; }
+.user-role {
+  font-size:0.62rem;
+  padding: 2px 7px;
+  border-radius: 10px;
+  letter-spacing: 1px;
+}
+.role-admin { background:rgba(255,170,0,0.1); color:#ffaa00; border:1px solid rgba(255,170,0,0.25); }
+.role-user  { background:rgba(0,200,255,0.08); color:var(--cyan-dim); border:1px solid var(--border); }
+.del-btn {
+  background:transparent; border:1px solid rgba(255,50,80,0.25);
+  color:rgba(255,50,80,0.5); font-family:var(--mono); font-size:0.65rem;
+  padding:2px 8px; cursor:pointer; transition:all 0.15s; letter-spacing:0.5px;
+}
+.del-btn:hover { border-color:var(--red); color:var(--red); background:rgba(255,50,80,0.08); }
+
+/* Card footer */
+.card-foot {
+  padding: 12px 32px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.foot-text { font-size:0.62rem; color:rgba(180,220,240,0.2); letter-spacing:1px; }
+
+/* Loading spinner */
+.spinner {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border: 2px solid rgba(0,200,255,0.2);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Divider */
+.divider {
+  display:flex; align-items:center; gap:10px;
+  margin: 16px 0;
+  font-size:0.62rem; color:rgba(180,220,240,0.2); letter-spacing:2px;
+}
+.divider::before,.divider::after {
+  content:''; flex:1; height:1px; background:var(--border);
+}
+</style>
+</head>
+<body>
+
+<div class="corner corner-tl"></div>
+<div class="corner corner-tr"></div>
+<div class="corner corner-bl"></div>
+<div class="corner corner-br"></div>
+
+<div class="card">
+
+  <div class="card-head">
+    <span class="logo">CAL<em>CIUM</em></span>
+    <div class="tagline">Security Research Assistant</div>
+    <div class="status-row">
+      <div class="status-dot"></div>
+      <div class="status-text">System Online</div>
+    </div>
+  </div>
+
+  <div class="card-body">
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('login')">Sign In</button>
+      <button class="tab" id="adminTab" onclick="switchTab('admin')" style="display:none">Admin</button>
+    </div>
+
+    <!-- LOGIN PANEL -->
+    <div class="panel active" id="panel-login">
+      <div class="msg" id="loginMsg"></div>
+      <div class="field">
+        <label class="field-label">Username</label>
+        <input class="field-input" type="text" id="loginUser" placeholder="Enter username"
+          onkeydown="if(event.key==='Enter') doLogin()" autocomplete="username" autofocus>
+      </div>
+      <div class="field">
+        <label class="field-label">Password</label>
+        <input class="field-input" type="password" id="loginPass" placeholder="Enter password"
+          onkeydown="if(event.key==='Enter') doLogin()" autocomplete="current-password">
+      </div>
+      <button class="submit-btn" id="loginBtn" onclick="doLogin()">AUTHENTICATE</button>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div class="panel" id="panel-admin">
+
+      <!-- Create user -->
+      <div class="msg" id="adminMsg"></div>
+      <div class="field">
+        <label class="field-label">New Username</label>
+        <input class="field-input" type="text" id="newUser" placeholder="Username (min 3 chars)">
+      </div>
+      <div class="field">
+        <label class="field-label">Password</label>
+        <input class="field-input" type="password" id="newPass" placeholder="Password (min 6 chars)">
+      </div>
+      <div class="field">
+        <label class="field-label">Role</label>
+        <select class="role-select" id="newRole">
+          <option value="user">User — standard access</option>
+          <option value="admin">Admin — full access + manage users</option>
+        </select>
+      </div>
+      <button class="submit-btn" onclick="createUser()">CREATE USER</button>
+
+      <div class="divider">EXISTING USERS</div>
+
+      <!-- Users list -->
+      <div class="users-list" id="usersList">
+        <div style="color:var(--dim); font-size:0.75rem; text-align:center; padding:10px">Loading...</div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="card-foot">
+    <span class="foot-text" id="footUser">NOT AUTHENTICATED</span>
+    <span class="foot-text">CALCIUM v2.0</span>
+  </div>
+
+</div>
+
+<script>
+const TOKEN_KEY = 'calcium_token';
+
+// ── Check if already logged in ────────────────────────────────────────────────
+async function checkExistingSession() {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return;
+
+  try {
+    const resp = await fetch('/api/auth/verify', {
+      headers: { 'X-Auth-Token': token }
+    });
+    const data = await resp.json();
+    if (data.valid) {
+      // Already logged in — go straight to app
+      window.location.href = '/';
+    }
+  } catch(e) {}
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const btn = document.getElementById('loginBtn');
+  const msg = document.getElementById('loginMsg');
+
+  if (!username || !password) {
+    showMsg(msg, 'error', 'Please enter username and password');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>AUTHENTICATING...';
+  msg.className = 'msg';
+
+  try {
+    const resp = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await resp.json();
+
+    if (data.success) {
+      localStorage.setItem(TOKEN_KEY, data.token);
+      localStorage.setItem('calcium_user', data.username);
+      localStorage.setItem('calcium_role', data.role);
+
+      showMsg(msg, 'success', `Welcome back, ${data.username}! Redirecting...`);
+      document.getElementById('footUser').textContent = data.username.toUpperCase();
+
+      setTimeout(() => { window.location.href = '/'; }, 800);
+    } else {
+      showMsg(msg, 'error', data.message || 'Login failed');
+      btn.disabled = false;
+      btn.innerHTML = 'AUTHENTICATE';
+      document.getElementById('loginPass').value = '';
+      document.getElementById('loginPass').focus();
+    }
+  } catch(e) {
+    showMsg(msg, 'error', 'Connection error — is the server running?');
+    btn.disabled = false;
+    btn.innerHTML = 'AUTHENTICATE';
+  }
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel-${tab}`).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => {
+    if (t.textContent.toLowerCase().includes(tab === 'login' ? 'sign' : tab)) {
+      t.classList.add('active');
+    }
+  });
+  if (tab === 'admin') loadUsers();
+}
+
+// ── Admin: create user ────────────────────────────────────────────────────────
+async function createUser() {
+  const token = localStorage.getItem(TOKEN_KEY);
+  const username = document.getElementById('newUser').value.trim();
+  const password = document.getElementById('newPass').value;
+  const role = document.getElementById('newRole').value;
+  const msg = document.getElementById('adminMsg');
+
+  if (!username || !password) {
+    showMsg(msg, 'error', 'Username and password are required');
+    return;
+  }
+
+  try {
+    const resp = await fetch('/api/auth/users/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Auth-Token': token
+      },
+      body: JSON.stringify({ username, password, role })
+    });
+    const data = await resp.json();
+
+    if (data.success) {
+      showMsg(msg, 'success', data.message);
+      document.getElementById('newUser').value = '';
+      document.getElementById('newPass').value = '';
+      loadUsers();
+    } else {
+      showMsg(msg, 'error', data.message || data.error);
+    }
+  } catch(e) {
+    showMsg(msg, 'error', 'Connection error');
+  }
+}
+
+// ── Admin: load users list ────────────────────────────────────────────────────
+async function loadUsers() {
+  const token = localStorage.getItem(TOKEN_KEY);
+  const list = document.getElementById('usersList');
+
+  try {
+    const resp = await fetch('/api/auth/users', {
+      headers: { 'X-Auth-Token': token }
+    });
+    const data = await resp.json();
+
+    if (data.error) {
+      list.innerHTML = `<div style="color:var(--red);font-size:0.75rem;text-align:center;padding:10px">${data.error}</div>`;
+      return;
+    }
+
+    if (!data.users.length) {
+      list.innerHTML = '<div style="color:var(--dim);font-size:0.75rem;text-align:center;padding:10px">No users yet</div>';
+      return;
+    }
+
+    const currentUser = localStorage.getItem('calcium_user');
+    list.innerHTML = data.users.map(u => `
+      <div class="user-row">
+        <span class="user-name">${u.username}</span>
+        <span class="user-role role-${u.role}">${u.role}</span>
+        <span style="color:var(--dim);font-size:0.65rem;flex:1;text-align:right;padding-right:8px">
+          ${u.last_login ? u.last_login.slice(0,16).replace('T',' ') : 'never'}
+        </span>
+        ${u.username !== currentUser
+          ? `<button class="del-btn" onclick="deleteUser('${u.username}')">DEL</button>`
+          : `<span style="font-size:0.62rem;color:var(--dim)">(you)</span>`}
+      </div>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--red);font-size:0.75rem;text-align:center;padding:10px">Failed to load users</div>';
+  }
+}
+
+// ── Admin: delete user ────────────────────────────────────────────────────────
+async function deleteUser(username) {
+  if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return;
+  const token = localStorage.getItem(TOKEN_KEY);
+  const msg = document.getElementById('adminMsg');
+
+  try {
+    const resp = await fetch('/api/auth/users/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
+      body: JSON.stringify({ username })
+    });
+    const data = await resp.json();
+    showMsg(msg, data.success ? 'success' : 'error', data.message || data.error);
+    if (data.success) loadUsers();
+  } catch(e) {
+    showMsg(msg, 'error', 'Connection error');
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function showMsg(el, type, text) {
+  el.className = `msg ${type}`;
+  el.textContent = text;
+}
+
+// Show admin tab if logged in as admin
+function checkAdminAccess() {
+  const role = localStorage.getItem('calcium_role');
+  if (role === 'admin') {
+    document.getElementById('adminTab').style.display = '';
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+checkExistingSession();
+checkAdminAccess();
+</script>
+</body>
+</html>

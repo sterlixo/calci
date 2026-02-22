@@ -609,8 +609,10 @@ header {
   <div class="logo">CAL<em>CIUM</em></div>
   <div class="status-badge"><div class="status-dot"></div>SYSTEM ONLINE</div>
   <div class="header-right">
+    <button class="hbtn" id="adminBtn" onclick="window.location.href='/login'" style="display:none">[ ADMIN ]</button>
     <button class="hbtn" onclick="clearSession()">[ CLEAR ]</button>
     <button class="hbtn" onclick="exportSession()">[ EXPORT ]</button>
+    <button class="hbtn" style="border-color:rgba(255,50,80,0.3);color:rgba(255,80,100,0.6)" onclick="doLogout()">[ LOGOUT ]</button>
   </div>
 </header>
 
@@ -1134,6 +1136,41 @@ async function exportSession() {
   const data = await resp.json();
   if (data.file) addMessage('ai', `✅ Session exported to: \`${data.file}\``);
 }
+
+
+// ── AUTH CHECK ────────────────────────────────────────────────────────────────
+const TOKEN_KEY = 'calcium_token';
+function getToken() { return localStorage.getItem(TOKEN_KEY) || ''; }
+function getUsername() { return localStorage.getItem('calcium_user') || 'USER'; }
+function getRole() { return localStorage.getItem('calcium_role') || 'user'; }
+
+async function checkAuth() {
+  const token = getToken();
+  if (!token) { window.location.href = '/login'; return; }
+  const resp = await fetch('/api/auth/verify', { headers: { 'X-Auth-Token': token } });
+  const data = await resp.json();
+  if (!data.valid) { localStorage.clear(); window.location.href = '/login'; }
+  // Show username and role in header
+  const statusEl = document.querySelector('.status-badge span');
+  if (statusEl) statusEl.textContent = getUsername().toUpperCase() + ' · ONLINE';
+  // Show admin button if admin
+  if (getRole() === 'admin') {
+    const adminBtn = document.getElementById('adminBtn');
+    if (adminBtn) adminBtn.style.display = '';
+  }
+}
+
+async function doLogout() {
+  await fetch('/api/auth/logout', { method: 'POST', headers: { 'X-Auth-Token': getToken() } });
+  localStorage.clear();
+  window.location.href = '/login';
+}
+
+function authHeaders() {
+  return { 'Content-Type': 'application/json', 'X-Auth-Token': getToken() };
+}
+
+checkAuth();
 
 initTools();
 </script>
