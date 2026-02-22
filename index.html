@@ -4,519 +4,645 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calcium — AI Pentesting Assistant</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/green-screen.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 <style>
-  :root {
-    --green: #00d4ff;
-    --green-dim: #0099cc;
-    --green-dark: #001f33;
-    --green-glow: rgba(0,212,255,0.15);
-    --red: #ff4466;
-    --yellow: #44ddff;
-    --bg: #020810;
-    --bg2: #040d1a;
-    --bg3: #061224;
-    --border: rgba(0,180,255,0.22);
-    --text: #c0eaff;
-  }
+html { font-size: 15px; }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg:       #080c10;
+  --bg2:      #0c1118;
+  --bg3:      #101820;
+  --bg4:      #141e28;
+  --border:   rgba(0, 200, 255, 0.12);
+  --border2:  rgba(0, 200, 255, 0.22);
+  --cyan:     #00ccff;
+  --cyan-dim: #0088bb;
+  --cyan-glow:rgba(0,200,255,0.12);
+  --red:      #ff3355;
+  --orange:   #ff9900;
+  --green:    #00ff88;
+  --green-dim:#00aa55;
+  --text:     #b8d8e8;
+  --text-dim: rgba(180,220,240,0.45);
+  --mono:     'JetBrains Mono', monospace;
+  --display:  'Rajdhani', sans-serif;
+}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Share Tech Mono', monospace;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+* { margin:0; padding:0; box-sizing:border-box; }
 
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: repeating-linear-gradient(
-      0deg, transparent, transparent 2px,
-      rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
-    );
-    pointer-events: none;
-    z-index: 1000;
-  }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
-  @keyframes flicker {
-    0%,100% { opacity: 1; }
-    92% { opacity: 1; }
-    93% { opacity: 0.85; }
-    94% { opacity: 1; }
-    96% { opacity: 0.9; }
-    97% { opacity: 1; }
-  }
-  body { animation: flicker 8s infinite; }
+/* Subtle scanline */
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px);
+  pointer-events:none;
+  z-index:9999;
+}
 
-  /* ── Header ── */
-  header {
-    padding: 10px 20px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg2);
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-shrink: 0;
-  }
+/* ── SCROLLBARS ── */
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.2); border-radius:2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,200,255,0.4); }
 
-  .logo {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.56rem;
-    font-weight: 900;
-    color: var(--green);
-    text-shadow: 0 0 20px var(--green), 0 0 40px rgba(0,212,255,0.4);
-    letter-spacing: 2px;
-  }
-  .logo span { color: #44aaff; }
+/* ── HEADER ── */
+header {
+  height: 48px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
 
-  .status { display: flex; align-items: center; gap: 6px; font-size: 1.23rem; color: var(--green-dim); }
-  .dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: var(--green); box-shadow: 0 0 10px var(--green);
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+.logo {
+  font-family: var(--display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 3px;
+  text-shadow: 0 0 20px rgba(0,200,255,0.5);
+}
+.logo em { color: rgba(0,200,255,0.45); font-style:normal; }
 
-  .header-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.status-badge {
+  display:flex; align-items:center; gap:6px;
+  font-size:0.72rem; color:var(--green); letter-spacing:2px;
+  text-transform:uppercase;
+}
+.status-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:var(--green); box-shadow:0 0 8px var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-  select {
-    background: var(--bg3); border: 1px solid var(--border);
-    color: var(--green); font-family: 'Share Tech Mono', monospace;
-    font-size: 1.23rem; padding: 5px 10px; cursor: pointer; outline: none;
-  }
-  select:focus { border-color: var(--green); }
+.header-right { margin-left:auto; display:flex; gap:8px; align-items:center; }
 
-  .btn {
-    background: transparent; border: 1px solid var(--border);
-    color: var(--green-dim); font-family: 'Share Tech Mono', monospace;
-    font-size: 1.23rem; padding: 5px 12px; cursor: pointer;
-    transition: all 0.2s; letter-spacing: 1px;
-  }
-  .btn:hover { border-color: var(--green); color: var(--green); box-shadow: 0 0 10px var(--green-glow); }
+.hbtn {
+  background:transparent;
+  border:1px solid var(--border2);
+  color:var(--cyan-dim);
+  font-family:var(--mono);
+  font-size:0.75rem;
+  padding:5px 14px;
+  cursor:pointer;
+  letter-spacing:1px;
+  transition:all 0.15s;
+  text-transform:uppercase;
+}
+.hbtn:hover { border-color:var(--cyan); color:var(--cyan); background:var(--cyan-glow); }
 
-  /* ── Main layout ── */
-  .main { display: flex; flex: 1; overflow: hidden; }
+/* ── MAIN LAYOUT ── */
+.main { display:flex; flex:1; overflow:hidden; }
 
-  /* ── Sidebar — Kali Tools Reference ── */
-  .sidebar {
-    width: 33.33%;
-    border-right: 1px solid var(--border);
-    background: var(--bg2);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    overflow: hidden;
-  }
+/* ── SIDEBAR ── */
+.sidebar {
+  width:30%;
+  min-width:220px;
+  max-width:320px;
+  border-right:1px solid var(--border);
+  background:var(--bg2);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
 
-  .sidebar-header {
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
+.sidebar-head {
+  padding:10px 12px 6px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
 
-  .sidebar-title {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.98rem;
-    color: var(--green-dim);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
+.sidebar-title {
+  font-family:var(--display);
+  font-size:0.75rem;
+  font-weight:600;
+  color:var(--cyan-dim);
+  letter-spacing:3px;
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
 
-  .tools-search-input {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    color: var(--green);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 1.17rem;
-  }
-  .tools-search-input::placeholder { color: rgba(0,180,255,0.22); }
-  .tools-search-input:focus { border-color: var(--green); }
+.search-wrap {
+  position:relative;
+}
+.search-wrap::before {
+  content:'›';
+  position:absolute; left:8px; top:50%; transform:translateY(-50%);
+  color:var(--cyan-dim); font-size:1rem; pointer-events:none;
+}
+#toolSearch {
+  width:100%;
+  background:var(--bg3);
+  border:1px solid var(--border);
+  color:var(--cyan);
+  font-family:var(--mono);
+  font-size:0.82rem;
+  padding:6px 8px 6px 22px;
+  outline:none;
+  transition:border 0.15s;
+}
+#toolSearch::placeholder { color:var(--text-dim); }
+#toolSearch:focus { border-color:var(--cyan-dim); }
 
-  .cat-filter {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 3px;
-    padding: 5px 8px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
+.cat-strip {
+  display:flex; flex-wrap:wrap; gap:3px;
+  padding:6px 10px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  background:var(--bg2);
+}
+.cat-btn {
+  background:transparent;
+  border:1px solid rgba(0,200,255,0.1);
+  color:rgba(0,200,255,0.35);
+  font-family:var(--mono);
+  font-size:0.68rem;
+  padding:3px 7px;
+  cursor:pointer;
+  letter-spacing:0.5px;
+  transition:all 0.12s;
+  text-transform:uppercase;
+}
+.cat-btn:hover, .cat-btn.active {
+  border-color:var(--cyan);
+  color:var(--cyan);
+  background:var(--cyan-glow);
+}
 
-  .cat-btn {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: rgba(0,255,65,0.35);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.98rem;
-    padding: 2px 5px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .cat-btn:hover, .cat-btn.active {
-    border-color: var(--green);
-    color: var(--green);
-    background: var(--green-glow);
-  }
+.tools-list {
+  flex:1;
+  overflow-y:auto;
+  padding:4px 0;
+}
 
-  .tools-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 5px 7px;
-  }
-  .tools-list::-webkit-scrollbar { width: 3px; }
-  .tools-list::-webkit-scrollbar-thumb { background: var(--green-dark); }
+.tool-cat-hdr {
+  font-family:var(--display);
+  font-size:0.68rem;
+  font-weight:600;
+  color:rgba(0,200,255,0.3);
+  letter-spacing:3px;
+  padding:8px 12px 3px;
+  text-transform:uppercase;
+}
 
-  .tool-cat-header {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.88rem;
-    color: var(--green-dim);
-    letter-spacing: 2px;
-    padding: 7px 3px 3px;
-    border-bottom: 1px solid rgba(0,180,255,0.12);
-    margin-bottom: 2px;
-  }
+.tool-item {
+  padding:5px 12px;
+  cursor:pointer;
+  border-left:2px solid transparent;
+  transition:all 0.12s;
+}
+.tool-item:hover {
+  background:rgba(0,200,255,0.06);
+  border-left-color:var(--cyan);
+}
+.tool-name {
+  font-size:0.85rem;
+  color:var(--cyan);
+  font-weight:600;
+}
+.tool-name::before { content:'$ '; color:rgba(0,200,255,0.25); font-weight:400; }
+.tool-desc {
+  font-size:0.73rem;
+  color:var(--text-dim);
+  margin-top:1px;
+  line-height:1.35;
+}
+.no-results {
+  text-align:center;
+  color:var(--text-dim);
+  font-size:0.78rem;
+  padding:20px;
+  font-style:italic;
+}
 
-  .tool-item {
-    padding: 4px 5px;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all 0.15s;
-    margin-bottom: 1px;
-  }
-  .tool-item:hover { border-color: var(--border); background: var(--green-glow); }
-  .tool-item:hover .tool-name { color: var(--green); }
+/* ── CONTENT AREA ── */
+.content { display:flex; flex:1; overflow:hidden; }
 
-  .tool-name {
-    font-size: 1.17rem;
-  }
-  .tool-name::before { content: '$ '; color: rgba(0,180,255,0.25); font-size: 1.08rem; }
+/* ── TERMINAL COLUMN ── */
+.term-col {
+  width:50%;
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  background:var(--bg);
+}
 
-  .tool-purpose {
-    font-size: 1.04rem;
-    color: rgba(180,230,255,0.5);
-    line-height: 1.3;
-    margin-top: 1px;
-    padding-left: 10px;
-  }
+.col-hdr {
+  height:36px;
+  padding:0 14px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg2);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-shrink:0;
+}
+.col-hdr-dot { width:5px; height:5px; border-radius:50%; }
+.col-hdr-title {
+  font-family:var(--display);
+  font-size:0.75rem;
+  font-weight:600;
+  letter-spacing:3px;
+  text-transform:uppercase;
+}
+.term-col .col-hdr-dot { background:#00ccff; box-shadow:0 0 6px #00ccff; }
+.term-col .col-hdr-title { color:#00ccff; }
+.chat-col .col-hdr-dot { background:var(--green); box-shadow:0 0 6px var(--green); }
+.chat-col .col-hdr-title { color:var(--green); }
 
-  .no-results {
-    color: rgba(0,180,255,0.22);
-    font-size: 0.91rem;
-    text-align: center;
-    padding: 20px 10px;
-    font-style: italic;
-  }
+/* Top pane */
+.term-top {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  border-bottom:1px solid rgba(0,200,255,0.2);
+}
+.pane-hdr {
+  height:26px;
+  padding:0 14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  border-bottom:1px solid var(--border);
+  background:rgba(0,200,255,0.03);
+  flex-shrink:0;
+}
+.pane-hdr-dot { width:4px; height:4px; border-radius:50%; }
+.pane-hdr-label {
+  font-size:0.65rem;
+  color:var(--text-dim);
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
 
-  /* ── Split columns ── */
-  .columns { display: flex; flex: 1; overflow: hidden; }
+#termOutput {
+  flex:1;
+  overflow-y:auto;
+  padding:10px 14px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
 
-  /* ── Col headers ── */
-  .col-header {
-    padding: 7px 14px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg2);
-    font-family: 'Orbitron', monospace;
-    font-size: 1.04rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-    letter-spacing: 2px;
-  }
-  .col-dot { width: 6px; height: 6px; border-radius: 50%; }
+.term-welcome {
+  color:rgba(0,200,255,0.22);
+  font-size:0.82rem;
+  line-height:1.9;
+  padding:4px 0;
+}
 
-  /* ── Terminal column ── */
-  .terminal-col {
-    width: 50%;
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: #010810;
-  }
-  .terminal-col .col-header { color: #44ddff; }
-  .terminal-col .col-dot { background: #44ddff; box-shadow: 0 0 6px #44ddff; }
+.term-entry { animation:fadeUp 0.2s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
 
-  /* ── Top pane: command runner ── */
-  .term-top-pane {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    border-bottom: 2px solid rgba(0,212,255,0.3);
-  }
-  .term-pane-header {
-    padding: 4px 14px;
-    font-size: 0.81rem;
-    letter-spacing: 2px;
-    color: rgba(0,212,255,0.5);
-    background: rgba(0,180,255,0.04);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    text-transform: uppercase;
-  }
-  .pane-dot { width: 5px; height: 5px; border-radius: 50%; }
+.term-cmd {
+  font-size:0.88rem;
+  color:#44ddff;
+  margin-bottom:3px;
+}
+.term-cmd::before { content:'$ '; color:rgba(0,200,255,0.4); }
 
-  #termOutput {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px 14px;
-    font-size: 1.14rem;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  #termOutput::-webkit-scrollbar { width: 4px; }
-  #termOutput::-webkit-scrollbar-thumb { background: var(--green-dark); }
+.term-out {
+  white-space:pre-wrap;
+  word-break:break-word;
+  color:#90c8e0;
+  font-size:0.82rem;
+  line-height:1.55;
+  padding:7px 10px;
+  background:rgba(0,0,0,0.3);
+  border-left:2px solid rgba(0,200,255,0.15);
+  max-height:220px;
+  overflow-y:auto;
+}
+.term-err { color:var(--red) !important; border-left-color:var(--red) !important; }
+.term-running { color:var(--text-dim); font-style:italic; font-size:0.78rem; }
 
-  .term-entry { animation: msgIn 0.2s ease; }
-  .term-cmd { color: #44ddff; margin-bottom: 3px; font-size: 1.14rem; }
-  .term-cmd::before { content: '$ '; color: rgba(0,200,255,0.6); }
-  .term-out {
-    white-space: pre-wrap;
-    word-break: break-word;
-    color: #a0d8ff;
-    font-size: 1.08rem;
-    padding: 6px 10px;
-    background: #020c1a;
-    border-left: 2px solid rgba(0,212,255,0.2);
-    max-height: 200px;
-    overflow-y: auto;
-  }
-  .term-err { color: var(--red); }
-  .term-info { color: rgba(0,212,255,0.4); font-size: 1.04rem; font-style: italic; }
+.term-input-row {
+  padding:8px 14px;
+  border-top:1px solid var(--border);
+  background:var(--bg2);
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-shrink:0;
+}
+.term-prompt { color:#44ddff; font-size:0.95rem; flex-shrink:0; }
 
-  .term-input-area {
-    padding: 8px 14px;
-    border-top: 1px solid var(--border);
-    background: var(--bg2);
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-shrink: 0;
-  }
-  .term-prompt { color: #44ddff; font-size: 1.23rem; flex-shrink: 0; }
+#cmdInput {
+  flex:1;
+  background:transparent;
+  border:none;
+  border-bottom:1px solid rgba(0,200,255,0.2);
+  color:#44ddff;
+  font-family:var(--mono);
+  font-size:0.88rem;
+  padding:2px 0;
+  outline:none;
+  transition:border 0.15s;
+}
+#cmdInput::placeholder { color:rgba(0,200,255,0.2); }
+#cmdInput:focus { border-bottom-color:rgba(0,200,255,0.6); }
 
-  #cmdInput {
-    flex: 1;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid rgba(0,180,255,0.3);
-    color: #44ddff;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 1.23rem;
-    padding: 2px 0;
-    outline: none;
-  }
-  #cmdInput::placeholder { color: rgba(0,180,255,0.25); }
-  #cmdInput:focus { border-bottom-color: rgba(0,200,255,0.7); }
+.run-btn {
+  background:transparent;
+  border:1px solid rgba(0,200,255,0.3);
+  color:#44ddff;
+  font-family:var(--mono);
+  font-size:0.78rem;
+  padding:4px 12px;
+  cursor:pointer;
+  letter-spacing:1px;
+  transition:all 0.15s;
+  text-transform:uppercase;
+}
+.run-btn:hover { border-color:#44ddff; background:rgba(0,200,255,0.08); box-shadow:0 0 8px rgba(0,200,255,0.2); }
+.run-btn:disabled { opacity:0.3; cursor:not-allowed; }
 
-  .run-btn {
-    background: transparent;
-    border: 1px solid rgba(0,180,255,0.35);
-    color: #44ddff;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 1.1rem;
-    padding: 3px 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .run-btn:hover { border-color: #44ddff; box-shadow: 0 0 8px rgba(0,180,255,0.35); }
-  .run-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+/* Bottom pane: log */
+.term-bottom {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  background:rgba(0,0,0,0.2);
+}
 
-  /* ── Bottom pane: activity log ── */
-  .term-bottom-pane {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: #000d1a;
-  }
-  #activityLog {
-    flex: 1;
-    overflow-y: auto;
-    padding: 6px 14px;
-    font-size: 0.98rem;
-    font-family: 'Share Tech Mono', monospace;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-  #activityLog::-webkit-scrollbar { width: 3px; }
-  #activityLog::-webkit-scrollbar-thumb { background: var(--green-dark); }
+#activityLog {
+  flex:1;
+  overflow-y:auto;
+  padding:5px 10px;
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  font-size:0.78rem;
+}
 
-  .log-entry {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-    padding: 3px 0;
-    border-bottom: 1px solid rgba(0,180,255,0.04);
-    animation: msgIn 0.15s ease;
-    line-height: 1.4;
-  }
-  .log-time { color: rgba(0,180,255,0.35); flex-shrink: 0; font-size: 0.91rem; }
-  .log-type {
-    flex-shrink: 0;
-    font-size: 0.85rem;
-    padding: 1px 5px;
-    border-radius: 2px;
-    font-weight: bold;
-    letter-spacing: 0.5px;
-    min-width: 36px;
-    text-align: center;
-  }
-  .log-type.cmd  { background: rgba(0,180,255,0.15); color: #44ddff; }
-  .log-type.ok   { background: rgba(0,200,100,0.15); color: #4caf50; }
-  .log-type.err  { background: rgba(255,50,80,0.15);  color: #ff4466; }
-  .log-type.ai   { background: rgba(0,212,255,0.1);   color: #00d4ff; }
-  .log-type.info { background: rgba(255,200,0,0.1);   color: #f0a500; }
-  .log-msg { color: rgba(180,220,255,0.65); flex: 1; word-break: break-word; font-size: 0.95rem; }
+.log-row {
+  display:flex;
+  align-items:flex-start;
+  gap:7px;
+  padding:2px 4px;
+  border-bottom:1px solid rgba(0,200,255,0.03);
+  animation:fadeUp 0.15s ease;
+  line-height:1.45;
+}
+.log-ts { color:rgba(0,200,255,0.25); flex-shrink:0; font-size:0.7rem; min-width:56px; }
+.log-tag {
+  flex-shrink:0;
+  font-size:0.65rem;
+  padding:1px 5px;
+  border-radius:2px;
+  font-weight:700;
+  letter-spacing:0.5px;
+  min-width:32px;
+  text-align:center;
+  text-transform:uppercase;
+}
+.log-tag.cmd  { background:rgba(0,200,255,0.12);  color:#44ddff; }
+.log-tag.ok   { background:rgba(0,255,100,0.1);   color:#44ff88; }
+.log-tag.err  { background:rgba(255,50,80,0.12);  color:#ff4466; }
+.log-tag.ai   { background:rgba(0,200,255,0.08);  color:#00ccff; }
+.log-tag.info { background:rgba(255,160,0,0.1);   color:#ffaa00; }
+.log-text { color:rgba(180,220,240,0.55); flex:1; word-break:break-word; font-size:0.75rem; }
 
-  /* ── Chat column ── */
-  .chat-col { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-  .chat-col .col-header { color: var(--green); }
-  .chat-col .col-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+/* ── CHAT COLUMN ── */
+.chat-col { flex:1; display:flex; flex-direction:column; overflow:hidden; }
 
-  #messages {
-    flex: 1; overflow-y: auto; padding: 16px;
-    display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth;
-  }
-  #messages::-webkit-scrollbar { width: 4px; }
-  #messages::-webkit-scrollbar-thumb { background: var(--green-dark); }
+#messages {
+  flex:1;
+  overflow-y:auto;
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  scroll-behavior:smooth;
+}
 
-  @keyframes msgIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+.welcome {
+  text-align:center;
+  padding:28px 16px;
+  color:rgba(0,200,255,0.25);
+}
+.welcome-art {
+  font-size:0.72rem;
+  line-height:1.3;
+  white-space:pre;
+  color:rgba(0,200,255,0.1);
+  margin-bottom:14px;
+}
+.welcome h2 {
+  font-family:var(--display);
+  font-size:1.0rem;
+  font-weight:700;
+  letter-spacing:4px;
+  color:rgba(0,200,255,0.4);
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+.welcome p {
+  font-size:0.8rem;
+  line-height:1.8;
+  color:var(--text-dim);
+}
 
-  .message { display: flex; gap: 10px; animation: msgIn 0.3s ease; }
-  .msg-icon {
-    width: 28px; height: 28px; border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem; flex-shrink: 0; margin-top: 2px;
-  }
-  .user-msg .msg-icon { border-color: rgba(0,180,255,0.35); color: #44ddff; }
-  .ai-msg .msg-icon { border-color: var(--border); color: var(--green); box-shadow: 0 0 10px var(--green-glow); }
+.msg {
+  display:flex;
+  gap:10px;
+  animation:fadeUp 0.25s ease;
+}
+.msg-icon {
+  width:26px; height:26px;
+  border:1px solid var(--border2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:0.85rem;
+  flex-shrink:0;
+  margin-top:2px;
+}
+.user-msg .msg-icon { color:#44ddff; border-color:rgba(0,200,255,0.3); }
+.ai-msg .msg-icon { color:var(--green); border-color:rgba(0,255,136,0.2); box-shadow:0 0 8px rgba(0,255,136,0.1); }
 
-  .msg-content { flex: 1; min-width: 0; }
-  .msg-meta { font-size: 1.04rem; color: var(--green-dim); margin-bottom: 4px; letter-spacing: 1px; }
-  .msg-body { font-size: 1.3rem; line-height: 1.7; color: var(--text); }
-  .user-msg .msg-body { color: #d0f0ff; }
+.msg-inner { flex:1; min-width:0; }
+.msg-meta {
+  font-size:0.68rem;
+  color:var(--cyan-dim);
+  margin-bottom:5px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+.msg-body {
+  font-size:0.9rem;
+  line-height:1.7;
+  color:var(--text);
+}
+.user-msg .msg-body { color:#c8e8f8; }
 
-  .msg-body h1,.msg-body h2,.msg-body h3 {
-    font-family: 'Orbitron', monospace; color: var(--green);
-    margin: 8px 0 5px; font-size: 1.3rem; letter-spacing: 1px;
-  }
-  .msg-body code {
-    background: var(--bg3); color: var(--green); padding: 1px 5px;
-    font-family: 'Share Tech Mono', monospace; font-size: 1.23rem;
-    border: 1px solid var(--border);
-  }
-  .msg-body pre {
-    background: var(--bg3); border: 1px solid var(--border);
-    padding: 10px; margin: 6px 0; overflow-x: auto; position: relative;
-  }
-  .msg-body pre code { background: none; border: none; padding: 0; color: var(--green); font-size: 1.21rem; }
-  .copy-btn {
-    position: absolute; top: 5px; right: 5px;
-    background: var(--bg); border: 1px solid var(--border);
-    color: var(--green-dim); font-family: 'Share Tech Mono', monospace;
-    font-size: 0.98rem; padding: 2px 7px; cursor: pointer; transition: all 0.2s;
-  }
-  .copy-btn:hover { color: var(--green); border-color: var(--green); }
-  .msg-body ul,.msg-body ol { padding-left: 18px; margin: 5px 0; }
-  .msg-body li { margin-bottom: 2px; }
-  .msg-body strong { color: var(--green); }
-  .msg-body a { color: var(--green-dim); text-decoration: underline; }
+.msg-body h1,.msg-body h2,.msg-body h3 {
+  font-family:var(--display);
+  color:var(--cyan);
+  margin:10px 0 4px;
+  font-size:0.95rem;
+  font-weight:700;
+  letter-spacing:1px;
+}
+.msg-body code {
+  background:var(--bg3);
+  color:var(--cyan);
+  padding:1px 5px;
+  font-family:var(--mono);
+  font-size:0.83rem;
+  border:1px solid var(--border);
+}
+.msg-body pre {
+  background:var(--bg3);
+  border:1px solid var(--border);
+  padding:10px 12px;
+  margin:7px 0;
+  overflow-x:auto;
+  position:relative;
+}
+.msg-body pre code {
+  background:none; border:none; padding:0;
+  color:var(--green);
+  font-size:0.82rem;
+}
+.copy-btn {
+  position:absolute; top:5px; right:5px;
+  background:var(--bg); border:1px solid var(--border);
+  color:var(--text-dim);
+  font-family:var(--mono);
+  font-size:0.65rem;
+  padding:2px 7px;
+  cursor:pointer;
+  transition:all 0.15s;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+}
+.copy-btn:hover { color:var(--cyan); border-color:var(--cyan); }
 
-  .typing { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
-  .typing span { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: blink 1.2s infinite; }
-  .typing span:nth-child(2) { animation-delay: 0.2s; }
-  .typing span:nth-child(3) { animation-delay: 0.4s; }
-  @keyframes blink { 0%,100% { opacity: 0.2; } 50% { opacity: 1; } }
+.msg-body ul,.msg-body ol { padding-left:16px; margin:5px 0; }
+.msg-body li { margin-bottom:3px; }
+.msg-body strong { color:var(--cyan); }
+.msg-body a { color:var(--cyan-dim); text-decoration:underline; }
+.msg-body p { margin-bottom:6px; }
 
-  .chat-input-area {
-    padding: 10px 14px; border-top: 1px solid var(--border);
-    background: var(--bg2); display: flex; gap: 8px; flex-shrink: 0;
-  }
-  #userInput {
-    flex: 1; background: var(--bg3); border: 1px solid var(--border);
-    color: var(--text); font-family: 'Share Tech Mono', monospace;
-    font-size: 1.3rem; padding: 8px 12px; outline: none; resize: none;
-    height: 40px; transition: border 0.2s;
-  }
-  #userInput:focus { border-color: var(--green); box-shadow: 0 0 10px var(--green-glow); }
-  #userInput::placeholder { color: rgba(0,180,255,0.22); }
+.typing { display:flex; gap:5px; align-items:center; padding:4px 0; }
+.typing span {
+  width:5px; height:5px;
+  background:var(--green);
+  border-radius:50%;
+  animation:blink 1.2s infinite;
+}
+.typing span:nth-child(2) { animation-delay:0.2s; }
+.typing span:nth-child(3) { animation-delay:0.4s; }
+@keyframes blink { 0%,100%{opacity:0.2} 50%{opacity:1} }
 
-  .send-btn {
-    background: var(--green-dark); border: 1px solid var(--green);
-    color: var(--green); font-family: 'Orbitron', monospace;
-    font-size: 1.1rem; padding: 0 16px; cursor: pointer;
-    letter-spacing: 2px; transition: all 0.2s; flex-shrink: 0;
-  }
-  .send-btn:hover { background: var(--green); color: var(--bg); box-shadow: 0 0 16px rgba(0,212,255,0.4); }
-  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.chat-input-row {
+  padding:10px 14px;
+  border-top:1px solid var(--border);
+  background:var(--bg2);
+  display:flex;
+  gap:8px;
+  flex-shrink:0;
+  align-items:flex-end;
+}
+#userInput {
+  flex:1;
+  background:var(--bg3);
+  border:1px solid var(--border);
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:0.88rem;
+  padding:8px 12px;
+  outline:none;
+  resize:none;
+  height:38px;
+  line-height:1.5;
+  transition:border 0.15s;
+}
+#userInput:focus { border-color:rgba(0,200,255,0.4); }
+#userInput::placeholder { color:var(--text-dim); }
 
-  .welcome { text-align: center; padding: 30px 16px; color: rgba(0,212,255,0.3); }
-  .welcome-ascii { font-size: 0.98rem; line-height: 1.3; color: rgba(0,212,255,0.15); margin-bottom: 16px; white-space: pre; }
-  .welcome h2 { font-family: 'Orbitron', monospace; font-size: 1.3rem; color: rgba(0,212,255,0.45); letter-spacing: 3px; margin-bottom: 8px; }
-  .welcome p { font-size: 1.17rem; line-height: 1.8; }
-
-  .term-welcome { color: rgba(0,180,255,0.25); font-size: 1.14rem; line-height: 1.8; padding: 8px 0; }
+.send-btn {
+  background:rgba(0,200,255,0.08);
+  border:1px solid var(--cyan-dim);
+  color:var(--cyan);
+  font-family:var(--display);
+  font-size:0.82rem;
+  font-weight:700;
+  padding:0 18px;
+  height:38px;
+  cursor:pointer;
+  letter-spacing:2px;
+  transition:all 0.15s;
+  text-transform:uppercase;
+  flex-shrink:0;
+}
+.send-btn:hover {
+  background:var(--cyan);
+  color:var(--bg);
+  box-shadow:0 0 16px rgba(0,200,255,0.3);
+}
+.send-btn:disabled { opacity:0.35; cursor:not-allowed; }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">CAL<span>CIUM</span></div>
-  <div class="status"><div class="dot"></div><span>SYSTEM ONLINE</span></div>
-  <div class="header-actions">
-
-    <button class="btn" onclick="clearSession()">[ CLEAR ]</button>
-    <button class="btn" onclick="exportSession()">[ EXPORT ]</button>
+  <div class="logo">CAL<em>CIUM</em></div>
+  <div class="status-badge"><div class="status-dot"></div>SYSTEM ONLINE</div>
+  <div class="header-right">
+    <button class="hbtn" onclick="clearSession()">[ CLEAR ]</button>
+    <button class="hbtn" onclick="exportSession()">[ EXPORT ]</button>
   </div>
 </header>
 
 <div class="main">
 
-  <!-- Sidebar: Kali Tools Reference -->
+  <!-- SIDEBAR -->
   <div class="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-title">⚡ Kali Tools Reference</div>
-      <input class="tools-search-input" type="text" id="toolSearch" placeholder="Search tools..." oninput="renderTools()" autocomplete="off" />
+    <div class="sidebar-head">
+      <div class="sidebar-title">⚡ Kali Tools</div>
+      <div class="search-wrap">
+        <input id="toolSearch" type="text" placeholder="Search tools..." oninput="renderTools()" autocomplete="off">
+      </div>
     </div>
-    <div class="cat-filter" id="catFilter"></div>
+    <div class="cat-strip" id="catFilter"></div>
     <div class="tools-list" id="toolsList"></div>
   </div>
 
-  <!-- Split columns -->
-  <div class="columns">
+  <!-- CONTENT -->
+  <div class="content">
 
-    <!-- LEFT: Terminal (split top/bottom) -->
-    <div class="terminal-col">
-      <div class="col-header">
-        <div class="col-dot"></div>
-        TERMINAL
+    <!-- TERMINAL -->
+    <div class="term-col">
+      <div class="col-hdr">
+        <div class="col-hdr-dot"></div>
+        <div class="col-hdr-title">Terminal</div>
       </div>
 
-      <!-- TOP: Command Runner -->
-      <div class="term-top-pane">
-        <div class="term-pane-header">
-          <div class="pane-dot" style="background:#44ddff;"></div>
-          RUN COMMANDS
+      <!-- Top: command runner -->
+      <div class="term-top">
+        <div class="pane-hdr">
+          <div class="pane-hdr-dot" style="background:#44ddff"></div>
+          <div class="pane-hdr-label">Run Commands</div>
         </div>
         <div id="termOutput">
           <div class="term-welcome">
@@ -524,58 +650,58 @@
             └─$ Ready — type a command below
           </div>
         </div>
-        <div class="term-input-area">
+        <div class="term-input-row">
           <span class="term-prompt">$</span>
-          <input type="text" id="cmdInput" placeholder="nmap -sV 192.168.1.1" onkeydown="handleCmdKey(event)" autocomplete="off" spellcheck="false" />
+          <input type="text" id="cmdInput" placeholder="nmap -sV 192.168.1.1"
+            onkeydown="handleCmdKey(event)" autocomplete="off" spellcheck="false">
           <button class="run-btn" id="runBtn" onclick="runCommand()">[ RUN ]</button>
         </div>
       </div>
 
-      <!-- BOTTOM: Activity Log -->
-      <div class="term-bottom-pane">
-        <div class="term-pane-header">
-          <div class="pane-dot" style="background:#f0a500;"></div>
-          ACTIVITY LOG
+      <!-- Bottom: activity log -->
+      <div class="term-bottom">
+        <div class="pane-hdr">
+          <div class="pane-hdr-dot" style="background:#ffaa00"></div>
+          <div class="pane-hdr-label">Activity Log</div>
         </div>
         <div id="activityLog">
-          <div class="log-entry">
-            <span class="log-time">--:--:--</span>
-            <span class="log-type info">INFO</span>
-            <span class="log-msg">Calcium started. All actions will be logged here.</span>
+          <div class="log-row">
+            <span class="log-ts">--:--:--</span>
+            <span class="log-tag info">info</span>
+            <span class="log-text">Calcium started. All actions will be logged here.</span>
           </div>
         </div>
       </div>
-
     </div>
 
-    <!-- RIGHT: AI Chat -->
+    <!-- CHAT -->
     <div class="chat-col">
-      <div class="col-header">
-        <div class="col-dot"></div>
-        AI CHAT
+      <div class="col-hdr">
+        <div class="col-hdr-dot"></div>
+        <div class="col-hdr-title">AI Chat</div>
       </div>
       <div id="messages">
         <div class="welcome">
-          <div class="welcome-ascii">
- ██╗  ██╗ █████╗ ██╗     ██╗
- ██║ ██╔╝██╔══██╗██║     ██║
- █████╔╝ ███████║██║     ██║
- ██╔═██╗ ██╔══██║██║     ██║
- ██║  ██╗██║  ██║███████╗██║
- ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝</div>
-          <h2>AI PENTESTING COPILOT</h2>
-          <p>Browse tools on the left · Click any tool to ask AI<br>
-          Terminal in the middle · Chat on the right.</p>
+          <div class="welcome-art"> ██████╗ █████╗ ██╗      ██████╗██╗
+██╔════╝██╔══██╗██║     ██╔════╝██║
+██║     ███████║██║     ██║     ██║
+██║     ██╔══██║██║     ██║     ██║
+╚██████╗██║  ██║███████╗╚██████╗██║
+ ╚═════╝╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝</div>
+          <h2>AI Pentesting Copilot</h2>
+          <p>Browse tools on the left · Run commands in the middle<br>Chat with AI on the right</p>
         </div>
       </div>
-      <div class="chat-input-area">
-        <textarea id="userInput" placeholder="Ask Calcium anything... or paste tool output for analysis" onkeydown="handleKey(event)"></textarea>
+      <div class="chat-input-row">
+        <textarea id="userInput"
+          placeholder="Ask Calcium anything... or paste tool output for analysis"
+          onkeydown="handleKey(event)"></textarea>
         <button class="send-btn" id="sendBtn" onclick="sendMessage()">SEND</button>
       </div>
     </div>
 
-  </div><!-- /columns -->
-</div><!-- /main -->
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════════
@@ -608,6 +734,11 @@ const KALI_TOOLS = [
   {n:'ffuf',        c:'Web',      p:'Fast web fuzzer for dirs, parameters, vhosts'},
   {n:'wfuzz',       c:'Web',      p:'Web fuzzer — brute force params, auth, paths'},
   {n:'sqlmap',      c:'Web',      p:'Automated SQL injection detection and exploitation'},
+  {n:'gospider',    c:'Web',      p:'Fast web spider — crawl sites and find endpoints'},
+  {n:'hakrawler',   c:'Web',      p:'Simple crawler for endpoint and asset discovery'},
+  {n:'katana',      c:'Web',      p:'Next-gen crawling and spidering framework'},
+  {n:'gau',         c:'Web',      p:'Fetch known URLs from AlienVault, Wayback, URLScan'},
+  {n:'waybackurls', c:'Web',      p:'Pull URLs from Wayback Machine for a domain'},
   {n:'burpsuite',   c:'Web',      p:'Integrated web app security testing platform'},
   {n:'zaproxy',     c:'Web',      p:'OWASP ZAP — free web app security scanner/proxy'},
   {n:'whatweb',     c:'Web',      p:'Web fingerprinting — CMS, frameworks, server info'},
@@ -619,6 +750,8 @@ const KALI_TOOLS = [
   {n:'arjun',       c:'Web',      p:'HTTP parameter discovery — hidden GET/POST params'},
   {n:'xsser',       c:'Web',      p:'Automated XSS vulnerability detection'},
   {n:'httpx',       c:'Web',      p:'Fast HTTP probing — status codes, titles, tech'},
+  {n:'sslscan',     c:'Web',      p:'SSL/TLS scanner — ciphers, certs, vulnerabilities'},
+  {n:'testssl',     c:'Web',      p:'Test SSL/TLS configuration for weaknesses'},
   {n:'msfconsole',  c:'Exploit',  p:'Metasploit Framework — exploits, payloads, post-exploitation'},
   {n:'msfvenom',    c:'Exploit',  p:'Payload generator — shellcode for all platforms'},
   {n:'searchsploit',c:'Exploit',  p:'Offline Exploit-DB search for known CVEs'},
@@ -747,14 +880,14 @@ function renderTools() {
   Object.entries(grouped).forEach(([cat, tools]) => {
     if (activeCat === 'All') {
       const hdr = document.createElement('div');
-      hdr.className = 'tool-cat-header';
+      hdr.className = 'tool-cat-hdr';
       hdr.textContent = `── ${cat.toUpperCase()} ──`;
       list.appendChild(hdr);
     }
     tools.forEach(t => {
       const item = document.createElement('div');
       item.className = 'tool-item';
-      item.innerHTML = `<div class="tool-name">${t.n}</div><div class="tool-purpose">${t.p}</div>`;
+      item.innerHTML = `<div class="tool-name">${t.n}</div><div class="tool-desc">${t.p}</div>`;
       item.onclick = () => quickPrompt(`Explain ${t.n} in detail: what it does, key flags, practical pentesting examples and what to look for in the output.`);
       list.appendChild(item);
     });
@@ -766,23 +899,22 @@ function renderTools() {
 // ═══════════════════════════════════
 function logActivity(type, msg) {
   const log = document.getElementById('activityLog');
-  const now = new Date().toLocaleTimeString('en-US', {hour12: false});
-  const entry = document.createElement('div');
-  entry.className = 'log-entry';
-  entry.innerHTML = `
-    <span class="log-time">${now}</span>
-    <span class="log-type ${type}">${type.toUpperCase()}</span>
-    <span class="log-msg">${escapeHtml(msg)}</span>
+  const now = new Date().toLocaleTimeString('en-US', {hour12:false});
+  const row = document.createElement('div');
+  row.className = 'log-row';
+  row.innerHTML = `
+    <span class="log-ts">${now}</span>
+    <span class="log-tag ${type}">${type}</span>
+    <span class="log-text">${escapeHtml(msg)}</span>
   `;
-  log.appendChild(entry);
+  log.appendChild(row);
   log.scrollTop = log.scrollHeight;
 }
 
 // ═══════════════════════════════════
 // TERMINAL
 // ═══════════════════════════════════
-let cmdHistory = [];
-let historyIndex = -1;
+let cmdHistory = [], historyIndex = -1;
 
 function handleCmdKey(e) {
   if (e.key === 'Enter') { runCommand(); return; }
@@ -815,12 +947,11 @@ async function runCommand() {
   input.value = '';
 
   const out = document.getElementById('termOutput');
-  const welcome = out.querySelector('.term-welcome');
-  if (welcome) welcome.remove();
+  out.querySelector('.term-welcome')?.remove();
 
   const entry = document.createElement('div');
   entry.className = 'term-entry';
-  entry.innerHTML = `<div class="term-cmd">${escapeHtml(command)}</div><div class="term-info">running...</div>`;
+  entry.innerHTML = `<div class="term-cmd">${escapeHtml(command)}</div><div class="term-running">running...</div>`;
   out.appendChild(entry);
   out.scrollTop = out.scrollHeight;
 
@@ -829,8 +960,8 @@ async function runCommand() {
 
   try {
     const resp = await fetch('/api/run', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ command })
     });
     const data = await resp.json();
@@ -839,12 +970,13 @@ async function runCommand() {
       entry.innerHTML = `<div class="term-cmd">${escapeHtml(command)}</div><div class="term-out term-err">⚠ ${escapeHtml(data.error)}</div>`;
       logActivity('err', data.error);
     } else {
-      const rc = data.returncode !== undefined ? ` <span style="color:rgba(0,180,255,0.35);font-size: 0.85rem">[exit ${data.returncode}]</span>` : '';
+      const rc = data.returncode !== undefined
+        ? ` <span style="color:rgba(0,200,255,0.3);font-size:0.72rem">[exit ${data.returncode}]</span>` : '';
       entry.innerHTML = `<div class="term-cmd">${escapeHtml(command)}${rc}</div><div class="term-out">${escapeHtml(data.output)}</div>`;
       const lines = data.output.trim().split('\n').length;
       logActivity('ok', `exit ${data.returncode} · ${lines} line(s) of output`);
     }
-  } catch (e) {
+  } catch(e) {
     entry.innerHTML = `<div class="term-cmd">${escapeHtml(command)}</div><div class="term-out term-err">⚠ Connection error: ${escapeHtml(e.message)}</div>`;
     logActivity('err', 'Connection error: ' + e.message);
   }
@@ -861,28 +993,27 @@ const sessionId = 'session_' + Date.now();
 let isLoading = false;
 
 function getModel() { return 'openrouter/free'; }
-function timestamp() { return new Date().toLocaleTimeString('en-US', {hour12: false}); }
+function timestamp() { return new Date().toLocaleTimeString('en-US', {hour12:false}); }
 
 function addMessage(role, content) {
   const msgs = document.getElementById('messages');
-  const welcome = msgs.querySelector('.welcome');
-  if (welcome) welcome.remove();
+  msgs.querySelector('.welcome')?.remove();
 
   const div = document.createElement('div');
-  div.className = `message ${role === 'user' ? 'user-msg' : 'ai-msg'}`;
+  div.className = `msg ${role === 'user' ? 'user-msg' : 'ai-msg'}`;
 
-  const icon = role === 'user' ? '▶' : '⬡';
+  const icon  = role === 'user' ? '▶' : '◈';
   const label = role === 'user' ? 'OPERATOR' : 'CALCIUM';
   const model = role === 'ai'
-    ? `<span style="color:rgba(0,212,255,0.3)"> | ${getModel().split('/')[1]?.split(':')[0] || 'AI'}</span>` : '';
+    ? `<span style="color:rgba(0,200,255,0.25);font-weight:400"> · ${getModel().split('/')[1]?.split(':')[0] || 'AI'}</span>` : '';
 
   const bodyHTML = role === 'user'
-    ? escapeHtml(content).replace(/\n/g, '<br>')
+    ? escapeHtml(content).replace(/\n/g,'<br>')
     : renderMarkdown(content);
 
   div.innerHTML = `
     <div class="msg-icon">${icon}</div>
-    <div class="msg-content">
+    <div class="msg-inner">
       <div class="msg-meta">[${timestamp()}] ${label}${model}</div>
       <div class="msg-body">${bodyHTML}</div>
     </div>
@@ -909,11 +1040,11 @@ function addMessage(role, content) {
 function addTyping() {
   const msgs = document.getElementById('messages');
   const div = document.createElement('div');
-  div.className = 'message ai-msg';
+  div.className = 'msg ai-msg';
   div.id = 'typing-indicator';
   div.innerHTML = `
-    <div class="msg-icon">⬡</div>
-    <div class="msg-content">
+    <div class="msg-icon">◈</div>
+    <div class="msg-inner">
       <div class="msg-meta">[${timestamp()}] CALCIUM</div>
       <div class="msg-body"><div class="typing"><span></span><span></span><span></span></div></div>
     </div>
@@ -926,11 +1057,13 @@ function removeTyping() { document.getElementById('typing-indicator')?.remove();
 
 function renderMarkdown(text) {
   try { return marked.parse(text); }
-  catch { return escapeHtml(text).replace(/\n/g, '<br>'); }
+  catch { return escapeHtml(text).replace(/\n/g,'<br>'); }
 }
 
 function escapeHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 async function sendMessage(content = null) {
@@ -941,15 +1074,15 @@ async function sendMessage(content = null) {
 
   input.value = '';
   addMessage('user', message);
-  logActivity('ai', 'Query sent: ' + message.substring(0, 60) + (message.length > 60 ? '...' : ''));
+  logActivity('ai', 'Query sent: ' + message.substring(0,60) + (message.length > 60 ? '...' : ''));
   isLoading = true;
   document.getElementById('sendBtn').disabled = true;
   addTyping();
 
   try {
     const resp = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ message, session_id: sessionId, model: getModel() })
     });
     const data = await resp.json();
@@ -961,7 +1094,7 @@ async function sendMessage(content = null) {
       addMessage('ai', data.reply);
       logActivity('ai', 'AI responded · ' + data.reply.length + ' chars');
     }
-  } catch (e) {
+  } catch(e) {
     removeTyping();
     addMessage('ai', `⚠️ **Connection error:** ${e.message}`);
     logActivity('err', 'AI connection error: ' + e.message);
@@ -982,16 +1115,20 @@ function handleKey(e) {
 
 async function clearSession() {
   await fetch('/api/clear', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ session_id: sessionId })
   });
-  document.getElementById('messages').innerHTML = `<div class="welcome"><h2>SESSION CLEARED</h2><p>Start a new session.</p></div>`;
-  document.getElementById('termOutput').innerHTML = `<div class="term-info">Terminal cleared.</div>`;
+  document.getElementById('messages').innerHTML = `<div class="welcome"><h2>Session Cleared</h2><p>Start a new session.</p></div>`;
+  document.getElementById('termOutput').innerHTML = `<div class="term-running">Terminal cleared.</div>`;
+  document.getElementById('activityLog').innerHTML = '';
+  logActivity('info', 'Session cleared.');
 }
 
 async function exportSession() {
   const resp = await fetch('/api/export', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ session_id: sessionId })
   });
   const data = await resp.json();
