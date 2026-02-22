@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Calcium
+Comment=AI Pentesting Assistant
+Exec=bash -c "cd ~/calci && npm start"
+Icon=utilities-terminal
+Terminal=false
+Type=Application
+Categories=Security;Network;
+StartupNotify=true

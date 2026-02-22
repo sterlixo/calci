@@ -1,0 +1,21 @@
+{
+  "name": "calcium",
+  "version": "2.0.0",
+  "description": "AI-powered Pentesting Assistant for Kali Linux",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --linux deb"
+  },
+  "build": {
+    "appId": "com.calcium.pentest",
+    "productName": "Calcium",
+    "linux": {
+      "target": "deb",
+      "category": "Security"
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0"
+  }
+}
