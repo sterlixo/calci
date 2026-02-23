@@ -41,7 +41,7 @@ function createWindow() {
     win.loadURL('http://localhost:5000', {
       extraHeaders: 'pragma: no-cache\nCache-Control: no-cache\n'
     }).then(() => {
-      win.webContents.setZoomFactor(1.5)
+      win.webContents.setZoomFactor(2.0)
       win.show()
     }).catch(() => {
       if (retries > 0) {
