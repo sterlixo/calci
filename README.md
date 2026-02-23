@@ -19,8 +19,8 @@ An AI-powered security research assistant for Kali Linux.
 
 ### Step 1 — Clone the repo
 ```bash
-git clone [https://github.com/sterlixo/calci.git]
-cd calcium-app
+git clone https://github.com/sterlixo/calci.git
+cd calci
 ```
 
 ### Step 2 — Run setup
