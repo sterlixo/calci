@@ -15,7 +15,7 @@ echo ""
 
 # Install Python dependencies
 echo "[*] Installing Python dependencies..."
-pip3 install requests flask --break-system-packages 2>/dev/null || pip3 install requests flask
+pip3 install -r requirements.txt --break-system-packages 2>/dev/null || pip3 install -r requirements.txt
 
 echo ""
 echo "[+] Dependencies installed!"

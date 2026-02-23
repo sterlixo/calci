@@ -27,6 +27,13 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
+This installs all dependencies from `requirements.txt` automatically:
+```
+flask
+requests
+bcrypt
+```
+
 ### Step 3 — Get a free API key
 
 1. Go to [openrouter.ai](https://openrouter.ai)
