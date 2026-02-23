@@ -2,6 +2,8 @@
 
 An AI-powered security research assistant for Kali Linux.
 
+![Calcium Screenshot](screenshot.png)
+
 ---
 
 ## Requirements
