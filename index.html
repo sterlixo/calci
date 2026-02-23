@@ -423,43 +423,31 @@ header {
 .log-tag.info { background:rgba(255,160,0,0.1);   color:#ffaa00; }
 .log-text { color:rgba(180,220,240,0.55); flex:1; word-break:break-word; font-size:0.75rem; }
 
-/* ── LIVE STATS BAR ── */
+/* ── STATS BAR ── */
 #statsBar {
-  display:flex;
-  align-items:center;
-  gap:10px;
+  display:flex; align-items:center; gap:10px;
   padding:4px 10px;
   background:rgba(0,200,255,0.03);
   border-bottom:1px solid rgba(0,200,255,0.08);
-  font-family:monospace;
-  font-size:0.68rem;
-  flex-shrink:0;
+  font-family:monospace; font-size:0.68rem; flex-shrink:0;
 }
-.stat-item {
-  display:flex;
-  align-items:center;
-  gap:4px;
-  color:rgba(180,220,240,0.4);
-}
-.stat-item span.val {
-  font-weight:700;
-  font-size:0.72rem;
-}
+.stat-item { display:flex; align-items:center; gap:4px; color:rgba(180,220,240,0.4); }
+.stat-item span.val { font-weight:700; font-size:0.72rem; }
 .stat-cmd  .val { color:#44ddff; }
-.stat-ai   .val { color:#00ccff; }
 .stat-err  .val { color:#ff4466; }
 .stat-time .val { color:rgba(180,220,240,0.5); }
-.stat-sep { color:rgba(0,200,255,0.12); }
+.stat-sep  { color:rgba(0,200,255,0.12); }
 
-/* ── THREAT SCORE DOT ── */
-.threat-dot {
-  display:inline-block;
-  width:7px;
-  height:7px;
-  border-radius:50%;
-  flex-shrink:0;
-  margin-top:3px;
-}
+/* ── LOG ROW VARIANTS ── */
+.log-tag.cmd  { background:rgba(0,200,255,0.15); color:#44ddff; border-left:2px solid rgba(0,200,255,0.4); }
+.log-tag.ok   { background:rgba(0,255,100,0.12); color:#44ff88; border-left:2px solid rgba(68,255,136,0.4); }
+.log-tag.err  { background:rgba(255,50,80,0.18); color:#ff4466; border-left:2px solid rgba(255,68,102,0.6); font-weight:900; }
+.log-tag.info { background:rgba(255,160,0,0.1);  color:#ffaa00; border-left:2px solid rgba(255,160,0,0.3); }
+.log-row.is-err { background:rgba(255,50,80,0.04); border-left:2px solid rgba(255,68,102,0.2); }
+.log-row.is-cmd { border-left:2px solid rgba(0,200,255,0.08); }
+
+/* ── THREAT DOT ── */
+.threat-dot { display:inline-block; width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:3px; }
 .threat-low    { background:#44ff88; box-shadow:0 0 4px rgba(68,255,136,0.5); }
 .threat-medium { background:#ffaa00; box-shadow:0 0 4px rgba(255,170,0,0.5); }
 .threat-high   { background:#ff4466; box-shadow:0 0 4px rgba(255,68,102,0.6); }
@@ -793,11 +781,8 @@ header {
           <div class="pane-hdr-dot" style="background:#ffaa00"></div>
           <div class="pane-hdr-label">Activity Log</div>
         </div>
-        <!-- Live Stats Bar -->
         <div id="statsBar">
           <div class="stat-item stat-cmd">CMD <span class="val" id="statCmd">0</span></div>
-          <div class="stat-sep">·</div>
-          <div class="stat-item stat-ai">AI <span class="val" id="statAi">0</span></div>
           <div class="stat-sep">·</div>
           <div class="stat-item stat-err">ERR <span class="val" id="statErr">0</span></div>
           <div class="stat-sep">·</div>
@@ -1036,11 +1021,8 @@ function renderTools() {
 // ═══════════════════════════════════
 // ACTIVITY LOG
 // ═══════════════════════════════════
+const _stats = { cmd:0, err:0, startTime: Date.now() };
 
-// Stats counters
-const _stats = { cmd:0, ai:0, err:0, startTime: Date.now() };
-
-// Threat level map
 const THREAT_HIGH = new Set(['msfconsole','msfvenom','sqlmap','hydra','medusa','ncrack','hashcat',
   'john','aircrack-ng','aireplay-ng','ettercap','bettercap','responder','evil-winrm',
   'impacket-secretsdump','impacket-psexec','impacket-smbexec','impacket-wmiexec',
@@ -1059,24 +1041,22 @@ function getThreatLevel(cmd) {
 
 function updateStatsBar() {
   document.getElementById('statCmd').textContent  = _stats.cmd;
-  document.getElementById('statAi').textContent   = _stats.ai;
   document.getElementById('statErr').textContent  = _stats.err;
   const mins = Math.floor((Date.now() - _stats.startTime) / 60000);
   document.getElementById('statTime').textContent = mins + 'm';
 }
-
 setInterval(updateStatsBar, 30000);
 
 function logActivity(type, msg) {
+  if (type === 'ai') return;  // never log AI entries
   if (type === 'cmd' || type === 'ok') _stats.cmd++;
-  else if (type === 'ai')              _stats.ai++;
   else if (type === 'err')             _stats.err++;
   updateStatsBar();
 
   const log = document.getElementById('activityLog');
   const now = new Date().toLocaleTimeString('en-US', {hour12:false});
   const row = document.createElement('div');
-  row.className = 'log-row';
+  row.className = 'log-row' + (type === 'err' ? ' is-err' : type === 'cmd' ? ' is-cmd' : '');
 
   let threatDot = '';
   if (type === 'cmd') {
@@ -1258,7 +1238,6 @@ async function sendMessage(content = null) {
 
   input.value = '';
   addMessage('user', message);
-  logActivity('ai', 'Query sent: ' + message.substring(0,60) + (message.length > 60 ? '...' : ''));
   isLoading = true;
   document.getElementById('sendBtn').disabled = true;
   addTyping();
@@ -1309,7 +1288,6 @@ async function sendMessage(content = null) {
             bodyEl.innerHTML = renderMarkdown(fullText);
             msgs.scrollTop = msgs.scrollHeight;
           } else if (chunk.done) {
-            logActivity('ai', 'AI responded · ' + fullText.length + ' chars');
           }
         } catch(e) { continue; }
       }
@@ -1337,7 +1315,6 @@ function quickPrompt(text, toolName) {
     pill.innerHTML = `<span style="background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.2);color:rgba(0,200,255,0.7);font-family:monospace;font-size:11px;padding:4px 10px;border-radius:4px;letter-spacing:0.05em;">$ ${toolName}</span>`;
     msgs.appendChild(pill);
     msgs.scrollTop = msgs.scrollHeight;
-    logActivity('ai', 'Query sent: ' + text.substring(0,60) + '...');
     sendMessageSilent(text);
   } else {
     document.getElementById('userInput').value = text;
@@ -1392,7 +1369,6 @@ async function sendMessageSilent(message) {
         } catch(e) {}
       }
     }
-    logActivity('ai', `AI responded · ${fullText.length} chars`);
   } catch(e) {
     removeTyping();
     addMessage('ai', '⚠️ **Connection error:** ' + e.message);
