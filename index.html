@@ -976,7 +976,7 @@ function renderTools() {
       const item = document.createElement('div');
       item.className = 'tool-item';
       item.innerHTML = `<div class="tool-name">${t.n}</div><div class="tool-desc">${t.p}</div>`;
-      item.onclick = () => quickPrompt(`Explain ${t.n} in detail: what it does, key flags, practical examples and what to look for in the output.`);
+      item.onclick = () => quickPrompt(`Explain ${t.n} in detail: what it does, key flags, practical examples and what to look for in the output.`, t.n);
       list.appendChild(item);
     });
   });
@@ -1233,9 +1233,78 @@ async function sendMessage(content = null) {
   document.getElementById('sendBtn').disabled = false;
 }
 
-function quickPrompt(text) {
-  document.getElementById('userInput').value = text;
-  sendMessage();
+function quickPrompt(text, toolName) {
+  if (toolName) {
+    const msgs = document.getElementById('messages');
+    msgs.querySelector('.welcome')?.remove();
+    const pill = document.createElement('div');
+    pill.style.cssText = 'display:flex;align-items:center;gap:8px;margin:6px 0 6px auto;width:fit-content;max-width:80%;';
+    pill.innerHTML = `<span style="background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.2);color:rgba(0,200,255,0.7);font-family:monospace;font-size:11px;padding:4px 10px;border-radius:4px;letter-spacing:0.05em;">$ ${toolName}</span>`;
+    msgs.appendChild(pill);
+    msgs.scrollTop = msgs.scrollHeight;
+    logActivity('ai', 'Query sent: ' + text.substring(0,60) + '...');
+    sendMessageSilent(text);
+  } else {
+    document.getElementById('userInput').value = text;
+    sendMessage();
+  }
+}
+
+async function sendMessageSilent(message) {
+  if (isLoading) return;
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
+  addTyping();
+  try {
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ message, session_id: sessionId, model: getModel() })
+    });
+    if (resp.status === 401) {
+      removeTyping();
+      addMessage('ai', '🔒 **Session expired — contact your admin to restore access.**');
+      isLoading = false;
+      document.getElementById('sendBtn').disabled = false;
+      return;
+    }
+    removeTyping();
+    const msgDiv = addMessage('ai', '');
+    const bodyEl = msgDiv.querySelector('.msg-body');
+    const msgs   = document.getElementById('messages');
+    let fullText = '';
+    let buffer   = '';
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const chunk = JSON.parse(data);
+          if (chunk.token) {
+            fullText += chunk.token;
+            bodyEl.innerHTML = renderMarkdown(fullText);
+            bodyEl.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+            msgs.scrollTop = msgs.scrollHeight;
+          }
+        } catch(e) {}
+      }
+    }
+    logActivity('ai', `AI responded · ${fullText.length} chars`);
+  } catch(e) {
+    removeTyping();
+    addMessage('ai', '⚠️ **Connection error:** ' + e.message);
+  } finally {
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+  }
 }
 
 function handleKey(e) {
