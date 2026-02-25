@@ -1,7 +1,7 @@
 # ⚡ Calcium — AI Pentesting Assistant for Kali Linux
 
-An AI-powered security research assistant for Kali Linux.
-
+An AI-powered security research assistant for Kali Linux.  user:dev      |i need |
+                                                           pass:123456   | feed  |
 ![Calcium Screenshot](screenshot.png)
 
 ---
